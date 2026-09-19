@@ -1,0 +1,43 @@
+# Dependencies (installed in container)
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Environment files (secrets injected at runtime)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Development tools
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Test and CI
+.github
+.sisyphus
+
+# Documentation assets
+src/profile.jpg
+
+# Docker files themselves (not needed in build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+README.md
+LICENSE

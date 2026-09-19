@@ -1,0 +1,67 @@
+# Docker Compose for Smol Maiden
+# Usage:
+#   docker compose up -d          Start in background
+#   docker compose logs -f        Follow logs
+#   docker compose down           Stop and remove
+#   docker compose build          Rebuild without starting
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: smol-maiden
+
+    env_file:
+      - .env
+
+    # Docker injects tini as PID 1 for proper signal handling
+    init: true
+
+    # Auto-restart on crash or EC2 reboot
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    security_opt:
+      - no-new-privileges:true
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+# Uncomment below to self-host MongoDB on EC2 instead of using Atlas
+#
+#  mongodb:
+#    image: mongo:7
+#    container_name: smol-maiden-mongo
+#    restart: unless-stopped
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: admin
+#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+#    volumes:
+#      - mongo_data:/data/db
+#    ports:
+#      - "27017:27017"
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
+#
+#volumes:
+#  mongo_data:
