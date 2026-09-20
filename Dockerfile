@@ -21,10 +21,13 @@ COPY --from=deps /app/package.json ./package.json
 COPY commands/ ./commands/
 COPY events/ ./events/
 COPY handler/ ./handler/
+COPY models/ ./models/
 COPY slashCmds/ ./slashCmds/
 COPY src/ ./src/
+COPY utils/ ./utils/
 COPY config.js ./
 COPY index.js ./
+COPY mongo.js ./
 
 RUN chown -R smolmaiden:smolmaiden /app
 
