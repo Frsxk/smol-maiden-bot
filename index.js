@@ -45,9 +45,11 @@ process.on("unhandledRejection", (reason, promise) => {
     console.log("[FATAL] Possibly Unhandled Rejection at:", promise, "reason: ", reason.message);
 });
 
-// Connect simply to mongo database
-const simplydjs = require("simply-djs");
-// simplydjs.connect(process.env.MONGODB);
+// Connect to mongo database (used by the Channel Manager ownership registry)
+const mongo = require("./mongo");
+mongo().catch((err) => {
+    console.error("[MONGO] Failed to connect:", err.message);
+});
 
 // Login Discord Bot Token
 client.login(process.env.TOKEN);
