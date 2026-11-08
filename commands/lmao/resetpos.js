@@ -5,7 +5,7 @@ module.exports = {
     aliases: ["rp"],
     usage: "sm resetpos",
     category: "lmao",
-    description: "Resets every test channel position for server \"Loli's Fantasy\"",
+    description: "Reset the test channel positions in Loli's Fantasy.",
     ownerOnly: true,
     run: async (client, message, args) => {
         const cParent = message.guild.channels.cache.find(channel => channel.id === '954368431329787924');
@@ -35,7 +35,7 @@ module.exports = {
             }
 
             await wait(100);
-            msg.edit("⚒️ Moving channels...\n💫 This may took a while because I am getting rate limited.")
+            msg.edit("⚒️ Moving channels...\n💫 This may take a while because I'm being rate limited.")
 
             if ((args[0] == "b") || !args[0]) {
                 await b1.setParent(bParent);
@@ -48,7 +48,7 @@ module.exports = {
             }
 
             await wait(100);
-            msg.edit("⚒️ Moving channels...\n💫 This may took a while because I am getting rate limited.\n✨ Almost done!")
+            msg.edit("⚒️ Moving channels...\n💫 This may take a while because I'm being rate limited.\n✨ Almost done!")
 
             if ((args[0] == "a") || !args[0]) {
                 await a1.setParent(aParent);
@@ -61,7 +61,7 @@ module.exports = {
             }
 
             const embed = new client.discord.EmbedBuilder()
-                .addFields({name: "Success! ✅", value: "All test channels has been resetted."})
+                .addFields({name: "Success! ✅", value: "All test channels have been reset."})
                 .setColor(client.config.embedColor)
                 .setFooter({ text: `${client.config.embedFooterText1}`})
                 .setTimestamp();
@@ -69,7 +69,7 @@ module.exports = {
 
             msg.delete();
         } else {
-            return message.channel.send("invalid server detected. Aborting.");
+            return message.channel.send("This command only works in Loli's Fantasy. Nothing was changed.");
         }
     }
 }

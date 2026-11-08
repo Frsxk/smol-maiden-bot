@@ -19,8 +19,6 @@ module.exports = {
 
         const commandInt = interaction.options.getString("command");
         if (!commandInt) {
-
-            // Get the commands of a Bot category
             const botCommandsList = [];
             readdirSync(`${client.cwd}/slashCmds/Bot`).forEach((file) => {
                 const filen = require(`${client.cwd}/slashCmds/Bot/${file}`);
@@ -28,7 +26,6 @@ module.exports = {
                 botCommandsList.push(name);
             });
 
-            // Get the commands of a Utility category
             const utilityCommandsList = [];
             readdirSync(`${client.cwd}/slashCmds/Utility`).forEach((file) => {
                 const filen = require(`${client.cwd}/slashCmds/Utility/${file}`);
@@ -36,7 +33,6 @@ module.exports = {
                 utilityCommandsList.push(name);
             });
 
-            // Get the commands of a lmao category
             const lmaoCommandsList = [];
             readdirSync(`${client.cwd}/commands/lmao`).forEach((file) => {
                 const filen = require(`../../commands/lmao/${file}`);
@@ -44,10 +40,9 @@ module.exports = {
                 lmaoCommandsList.push(name);
             });
 
-            // This is what it commands when using the command without arguments
             const helpEmbed = new client.discord.EmbedBuilder()
                 .setTitle(`${client.user.username} Slash Help`)
-                .setDescription(` Hello **<@${interaction.member.id}>**, I am <@${client.user.id}>.  Nice to meet you! \nYou can use </help:953834373445189682> \`<command>\` to see more info about the slash commands!\n\n**Total Prefix Commands:** ${client.commands.size - lmaoCommandsList.length}\n**Total Slash Commands:** ${client.slash.size}`)
+                .setDescription(`Hello **<@${interaction.member.id}>**, I'm <@${client.user.id}>. Nice to meet you!\nUse </help:953834373445189682> \`<command>\` for details on a slash command.\n\n**Prefix commands:** ${client.commands.size - lmaoCommandsList.length}\n**Slash commands:** ${client.slash.size}`)
                 .addFields(
                     { name: "🤖 - Bot Slash Commands", value: botCommandsList.map((data) => `${data}`).join(", "),inline: true },
                     { name: "🛠 - Utility Slash Commands", value: utilityCommandsList.map((data) => `${data}`).join(", "), inline: true })
@@ -59,17 +54,14 @@ module.exports = {
         } else {
             const command = client.slash.get(commandInt.toLowerCase());
 
-            // This is what it sends when using the command with argument and it does not find the command
             if (!command) {
-                interaction.reply({ content: `There is no Slash Command named "${commandInt}"` });
+                interaction.reply({ content: `I don't have a slash command called "${commandInt}".` });
             } else {
-
-                // This is what it sends when using the command with argument and if it finds the command
                 let command = client.slash.get(commandInt.toLowerCase());
                 let name = command.name;
-                let description = command.description || "No descrpition provided"
+                let description = command.description || "No description provided"
                 let usage = command.usage || "No usage provided"
-                let category = command.category || "No category provided!"
+                let category = command.category || "No category provided"
 
                 let helpCmdEmbed = new client.discord.EmbedBuilder()
                     .setTitle(`${client.user.username} Help | \`${(name.toLocaleString())}\` Slash Command`)
@@ -78,7 +70,7 @@ module.exports = {
                         { name: "Usage", value: `${usage}` },
                         { name: 'Category', value: `${category}` })
                     .setColor(client.config.embedColor)
-                    .setFooter({ text: `${client.config.embedFooterText2}`})
+                    .setFooter({ text: `${client.config.embedFooterText2}` })
                     .setTimestamp();
 
                 interaction.reply({ embeds: [helpCmdEmbed] });

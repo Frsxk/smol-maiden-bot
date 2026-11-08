@@ -5,24 +5,24 @@ module.exports = {
     aliases: ["unp"],
     usage: "sm unpin <message ID>",
     category: "Channel Manager",
-    description: "Unpin a message in your channel!\nYou need to enable [Developer Mode](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) to copy the ID of message. Developer mode is located at User Settings -> Advanced (or Behavior for mobile).",
+    description: "Unpin a message in this channel.\nTo copy a message ID, enable [Developer Mode](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-). You'll find it under User Settings -> Advanced (or Behavior on mobile).",
     ownerOnly: false,
     run: async (client, message, args) => {
         const member = message.member;
         if (member.permissions.has(PermissionFlagsBits.Administrator) || member.permissions.has(PermissionFlagsBits.ManageMessages) || (message.author.id == client.config.ownerID)) {
             const errEmbed = new client.discord.EmbedBuilder()
-                .addFields({name: "Failed! :no_entry_sign:", value: `An error occurred when trying to find message \`${args[0]}\`. Please make sure you provide a valid message ID.`})
+                .addFields({name: "Failed! :no_entry_sign:", value: `I couldn't unpin a message with the ID \`${args[0]}\`. Check that the ID is valid and that the message is pinned.`})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`});
 
             const unpEmbed = new client.discord.EmbedBuilder()
                 .setTitle('Failed! :no_entry_sign:')
-                .addFields({name: "Please mention the message ID that you want to unpin!", value: "Usage: \`sm unpin <message ID>\`", inline: true})
+                .addFields({name: "Which message should I unpin?", value: "Reply to it, or use: `sm unpin <message ID>`", inline: true})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`});
 
             const notPinned = new client.discord.EmbedBuilder()
-                .addFields({name: "Failed! :no_entry_sign:", value: "That message is not pinned! Please make sure you provide a pinned message", inline: true})
+                .addFields({name: "Failed! :no_entry_sign:", value: "That message isn't pinned.", inline: true})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`});
 
@@ -68,7 +68,7 @@ module.exports = {
         } else {
             const erm = new client.discord.EmbedBuilder()
                 .setTitle("Failed! :no_entry_sign:")
-                .addFields({name: "You don't have permission to pin message(s) in this channel.", value: "Usage: \`sm unpin <message ID>\`", inline: true})
+                .addFields({name: "You need Manage Messages to unpin messages here.", value: "Usage: `sm unpin <message ID>`", inline: true})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`});
             return message.reply({ embeds: [erm], allowedMentions: {repliedUser : false}});

@@ -7,7 +7,6 @@ module.exports = {
     description: "I will repeat what you want in a specific channel, master~",
     ownerOnly: true,
     run: async (client, message, args) => {
-        // constants!
         const chnl = message.mentions.channels.first() || await client.channels.fetch(args[0]).catch(() => null)
         const yesAns = ["y", "ye", "yes"];
         const noAns = ["n", "no"];
@@ -28,7 +27,7 @@ module.exports = {
             }
             await message.channel.send("Done!")
         } catch (error) {
-            await message.channel.send("Unknown error occurred.")
+            await message.channel.send("Something went wrong. Check the console for details.")
             return console.log(error)
         }
     }

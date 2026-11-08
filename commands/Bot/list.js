@@ -11,13 +11,12 @@ module.exports = {
         if (!args[0]) {
             const embed = new client.discord.EmbedBuilder()
                 .setTitle(`Command List | ${client.user.username}`)
-                .addFields({name: "Please mention the category that you want to see!", value: "Usage: sm list <category>", inline: true})
+                .addFields({name: "Which category do you want to see?", value: "Usage: sm list <category>", inline: true})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`});
             await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
         }
 
-        // Copy and pasted from help command
         const botCommandsList = [];
         readdirSync(`${client.cwd}/commands/Bot`).forEach((file) => {
             const filen = require(`../../commands/Bot/${file}`);
@@ -92,14 +91,14 @@ module.exports = {
                 if (message.author.id !== client.config.ownerID) {
                     const errEmbed = new client.discord.EmbedBuilder()
                         .setTitle(`⛔ - Error`)
-                        .setDescription(`You don't have permission to use this command!`)
+                        .setDescription(`Only the bot owner can list these commands.`)
                         .setColor(client.config.embedColor)
                         .setFooter({text: `${client.config.embedFooterText1}`});
                     return message.reply({ embeds: [errEmbed], allowedMentions: { repliedUser: false } });
                 } else {
                     const embed4 = new client.discord.EmbedBuilder()
                         .setTitle(`😂 - lmao Commands List`)
-                        .addFields({name: "Some (if not all) lmao Commands are only available for owner", value: numbering(lmaoCommandsList), inline: true})
+                        .addFields({name: "Most of these commands are owner-only", value: numbering(lmaoCommandsList), inline: true})
                         .setColor(client.config.embedColor)
                         .setFooter({text: `${client.config.embedFooterText1}`});
                     await message.reply({ embeds: [embed4], allowedMentions: { repliedUser: false } });
@@ -109,7 +108,7 @@ module.exports = {
             default:
                 const embed5 = new client.discord.EmbedBuilder()
                     .setTitle(`Command List | ${client.user.username}`)
-                    .addFields({name: `Command list for \`${args.join(" ")}\` category is not found. Please make sure to input any available category from \`sm help\` command.`, value: "Usage: sm list <category>", inline: true})
+                    .addFields({name: `I don't know a category called \`${args.join(" ")}\`. Check \`sm help\` for the available categories.`, value: "Usage: sm list <category>", inline: true})
                     .setColor(client.config.embedColor)
                     .setFooter({text: `${client.config.embedFooterText1}`});
                 await message.reply({ embeds: [embed5], allowedMentions: { repliedUser: false } });

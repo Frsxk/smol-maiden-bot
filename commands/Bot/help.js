@@ -5,12 +5,10 @@ module.exports = {
     aliases: ["h", "commands"],
     usage: 'sm help <command>',
     category: "Bot",
-    description: "See all of my commands, or get help about a specific command.",
+    description: "See my commands, or get help about a specific command.",
     ownerOnly: false,
     run: async (client, message, args) => {
         if (!args[0]) {
-
-            // Get the commands of a Bot category
             const botCommandsList = [];
             readdirSync(`${client.cwd}/commands/Bot`).forEach((file) => {
                 const filen = require(`../../commands/Bot/${file}`);
@@ -18,7 +16,6 @@ module.exports = {
                 botCommandsList.push(name);
             });
 
-            // Get the commands of a Utility category
             const utilityCommandsList = [];
             readdirSync(`${client.cwd}/commands/Utility`).forEach((file) => {
                 const filen = require(`../../commands/Utility/${file}`);
@@ -26,7 +23,6 @@ module.exports = {
                 utilityCommandsList.push(name);
             });
 
-            // Get the commands of a Channel Manager category
             const channelManagerCommandsList = [];
             readdirSync(`${client.cwd}/commands/Channel Manager`).forEach((file) => {
                 const filen = require(`../../commands/Channel Manager/${file}`);
@@ -34,7 +30,6 @@ module.exports = {
                 channelManagerCommandsList.push(name);
             });
 
-            // Get the commands of a lmao category
             const lmaoCommandsList = [];
             readdirSync(`${client.cwd}/commands/lmao`).forEach((file) => {
                 const filen = require(`../../commands/lmao/${file}`);
@@ -42,10 +37,9 @@ module.exports = {
                 lmaoCommandsList.push(name);
             });
 
-            // No help arguments reply
             const helpEmbed = new client.discord.EmbedBuilder()
                 .setTitle(`${client.user.username} Help`)
-                .setDescription(` Hello **<@${message.author.id}>**, My name is <@${client.user.id}>. Nice to meet you!  \nYou can use \`sm help <command>\` to see more info about the commands!\nUse </help:953834373445189682> to try my slash commands!\n\n**Total Prefix Commands:** ${client.commands.size - lmaoCommandsList.length}\n**Total Slash Commands:** ${client.slash.size}`)
+                .setDescription(`Hello **<@${message.author.id}>**, I'm <@${client.user.id}>. Nice to meet you!\nUse \`sm help <command>\` for details on a specific command, or </help:953834373445189682> for my slash commands.\n\n**Prefix commands:** ${client.commands.size - lmaoCommandsList.length}\n**Slash commands:** ${client.slash.size}`)
                 .addFields(
                     { name: "🤖 - Bot Commands", value: botCommandsList.map((data) => `${data}`).join(", "), inline: true },
                     { name: "📂 - Channel Manager Commands", value: channelManagerCommandsList.map((data) => `${data}`).join(", "), inline: true },
@@ -58,12 +52,9 @@ module.exports = {
         } else {
             const command = client.commands.get(args[0].toLowerCase()) || client.commands.find((c) => c.aliases && c.aliases.includes(args[0].toLowerCase()));
 
-            // This is what it sends when using the command with argument and it does not find the command
             if (!command) {
-                message.reply({ content: `There is no command named \`${args[0]}\`. Please use \`sm help\` to see all commands available.`, allowedMentions: { repliedUser: false } });
+                message.reply({ content: `I don't have a command called \`${args[0]}\`. Run \`sm help\` to see everything I can do.`, allowedMentions: { repliedUser: false } });
             } else {
-
-                // This is what it sends when using the command with argument and if it finds the command
                 let name = command.name;
                 let description = command.description || "No description provided"
                 let usage = command.usage ? `\`${command.usage}\`` : "No usage provided"

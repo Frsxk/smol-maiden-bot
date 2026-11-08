@@ -4,7 +4,7 @@ module.exports = {
     aliases: ["pc"],
     usage: "sm pinscount",
     category: "Channel Manager",
-    description: "Get the pins count of your channel!",
+    description: "Count the pinned messages in a channel.",
     ownerOnly: false,
     run: async (client, message, args) => {
         const chnl = message.mentions.channels.first() || client.channels.resolve(args[0]);
@@ -12,7 +12,7 @@ module.exports = {
         if (chnl) {
             if (message.author.id !== client.config.ownerID) {
                 const pingEmbed = new client.discord.EmbedBuilder()
-                    .addFields({name: `Hey ${message.author.username}`, value: "You don't have permission to check other channel's pins count. Use this command without arguments to check current channel's pins count!"})
+                    .addFields({name: `Hey ${message.author.username}`, value: "Only the bot owner can check another channel's pins. Run this command without arguments to check the current channel."})
                     .setColor(client.config.embedColor)
                     .setFooter({text: `${client.config.embedFooterText1}`})
                     .setTimestamp();
@@ -24,9 +24,9 @@ module.exports = {
                 chnl.messages.fetchPins()
                 .then(pins => {
                     const pingEmbed = new client.discord.EmbedBuilder()
-                        .addFields({name: "Success! :white_check_mark:", value: `<#${chnl.id}> has ${pins.items.length} pinned messages.\nA channel can have up to 50 pinned messages!`})
+                        .addFields({name: "Success! :white_check_mark:", value: `Fetched ${pins.items.length} pinned messages from <#${chnl.id}>.\nThis command counts the first page only.`})
                         .setColor(client.config.embedColor)
-                        .setFooter({text: `${message.author.username} caught cheating 101`})
+                        .setFooter({text: `${client.config.embedFooterText1}`})
                         .setTimestamp();
                     message.reply({ embeds: [pingEmbed], allowedMentions: { repliedUser: false } });
                 })
@@ -40,7 +40,7 @@ module.exports = {
             message.channel.messages.fetchPins()
             .then(pins => {
                 const pingEmbed = new client.discord.EmbedBuilder()
-                    .addFields({name: "Success! :white_check_mark:", value: `<#${message.channel.id}> has ${pins.items.length} pinned messages.\nA channel can have up to 50 pinned messages!`})
+                    .addFields({name: "Success! :white_check_mark:", value: `Fetched ${pins.items.length} pinned messages from <#${message.channel.id}>.\nThis command counts the first page only.`})
                     .setColor(client.config.embedColor)
                     .setFooter({text: `${client.config.embedFooterText1}`})
                     .setTimestamp();

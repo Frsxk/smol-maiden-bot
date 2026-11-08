@@ -14,7 +14,6 @@ module.exports = {
         let servUser;
         const timelimit = 120000;
 
-        // Buttons
         const buttons = new client.discord.ActionRowBuilder()
             .addComponents(
                 new client.discord.ButtonBuilder()
@@ -31,7 +30,6 @@ module.exports = {
         const userBtn = buttons.components[0];
         const serverBtn = buttons.components[1];
 
-        // User constants
         if (!args[0]) {
             name = message.author;
         } else {
@@ -43,20 +41,20 @@ module.exports = {
         }
         if (name == null || !name) {
             const errEmbed = new client.discord.EmbedBuilder()
-                .addFields({name: "Failed! :no_entry_sign:", value: `An error occurred when trying to find user \`${args.join(" ")}\`. Please make sure you provide a valid argument (user mention, user ID, username).\nUsername argument must be exact! Username is CasE SeNsiTivE.`})
+                .addFields({name: "Failed! :no_entry_sign:", value: `I couldn't find a user matching \`${args.join(" ")}\`. Give a mention, user ID, or exact username. Usernames are case-sensitive.`})
                 .setColor(client.config.embedColor)
                 .setTimestamp()
                 .setFooter({text: `${client.config.embedFooterText1}`});
             return message.reply({embeds: [errEmbed], allowedMentions: {repliedUser : false} }); 
         }
 
-        // Make the user to be GuildUser and check their server avatar
+        // Server avatars belong to the guild member, not the user.
         servUser = message.guild.members.cache.find(u => u.id == name.id);
         if (servUser.avatar != null || !servUser) {
             serverBtn.setDisabled(false);
         }
 
-        // Fixing Discord username thing
+        // New usernames have discriminator "0", and their tag is undefined.
         if (name.discriminator == '0') {
             tag = name.username
         } else {
@@ -76,8 +74,6 @@ module.exports = {
             .setFooter({text: `Requested by ${authTag}`, iconURL: `${auth.displayAvatarURL()}`});
         await message.reply({embeds: [newEmbed], allowedMentions: {repliedUser : false}, components: [buttons]});
 
-
-        // interactionCreate things
         client.on('interactionCreate', i => {
             const timeoutFunction = () => {
                 serverBtn.setDisabled(true);

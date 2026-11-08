@@ -1,4 +1,4 @@
-// THIS IS SIMPLY-DJS'S RPS CODE (lol)
+// Vendored copy of simply-djs's RPS module.
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -23,11 +23,8 @@ const buttonStyles = {
     DANGER: discord_js_1.ButtonStyle.Danger,
 };
 const resolveButtonStyle = (style) => typeof style === 'string' ? buttonStyles[style] : style;
-// ------------------------------
-// ------ F U N C T I O N -------
-// ------------------------------
 /**
- * A classic RPS game, except this time it's on Discord to play with your pals, how cool is that ?
+ * Play rock paper scissors against another member.
  *
  * @param message
  * @param options
@@ -74,7 +71,7 @@ function rps(message, options = {}) {
                         name: message.author.tag,
                         iconURL: message.author.displayAvatarURL(),
                     },
-                    title: `Rock Paper Scissor !`,
+                    title: `Rock Paper Scissors!`,
                     footer: {text: "Good Luck!"},
                     color: `#ffb8bf`,
                 };
@@ -101,11 +98,11 @@ function rps(message, options = {}) {
                 paper,
                 scissors
             ]);
-            //Embeds
+            // Embeds
             const timeoutEmbed = new discord_js_1.EmbedBuilder()
                 .setTitle('Game Timed Out!')
                 .setColor(discord_js_1.Colors.Red)
-                .setDescription('The opponent didnt respond in time (30s)')
+                .setDescription("Your opponent didn't respond within 30 seconds")
                 .setFooter({
                     text: "Be faster next time!",
                 });
@@ -123,17 +120,17 @@ function rps(message, options = {}) {
                 const mes = message;
                 if (!interaction) {
                     if (!opponent) {
-                        yield mes.reply({content: 'No opponent mentioned!', allowedMentions: { repliedUser: false }});
+                        yield mes.reply({content: 'Mention someone to play against.', allowedMentions: { repliedUser: false }});
                         resolve();
                         return;
                     }
                     if (opponent.bot) {
-                        yield mes.reply({content: 'You cannot play against bots!', allowedMentions: { repliedUser: false }});
+                        yield mes.reply({content: "You can't play against bots.", allowedMentions: { repliedUser: false }});
                         resolve();
                         return;
                     }
                     if (opponent.id === message.member.user.id) {
-                        yield mes.reply({content: 'You cannot play by yourself!', allowedMentions: { repliedUser: false }});
+                        yield mes.reply({content: "You can't play against yourself.", allowedMentions: { repliedUser: false }});
                         resolve();
                         return;
                     }
@@ -141,7 +138,7 @@ function rps(message, options = {}) {
                 else if (interaction) {
                     if (!opponent) {
                         yield int.followUp({
-                            content: 'No opponent mentioned!',
+                            content: 'Mention someone to play against.',
                             ephemeral: true
                         });
                         resolve();
@@ -149,7 +146,7 @@ function rps(message, options = {}) {
                     }
                     if (opponent.bot) {
                         yield int.followUp({
-                            content: "You can't play against bots",
+                            content: "You can't play against bots.",
                             ephemeral: true
                         });
                         resolve();
@@ -157,7 +154,7 @@ function rps(message, options = {}) {
                     }
                     if (opponent.id === message.member.user.id) {
                         yield int.followUp({
-                            content: 'You cannot play by yourself!',
+                            content: "You can't play against yourself.",
                             ephemeral: true
                         });
                         resolve();
@@ -165,8 +162,8 @@ function rps(message, options = {}) {
                     }
                 }
                 const acceptEmbed = new discord_js_1.EmbedBuilder()
-                    .setTitle(`Request for ${opponent.tag} !`)
-                    .setDescription(`Rock Paper Scissor request for ${message.mentions.users.first()}!`)
+                    .setTitle(`Request for ${opponent.tag}!`)
+                    .setDescription(`Rock paper scissors challenge from ${message.member.user.tag}!`)
                     .setAuthor({
                     name: message.member.user.tag,
                     iconURL: message.member.user.displayAvatarURL()
@@ -180,14 +177,14 @@ function rps(message, options = {}) {
                 let m;
                 if (interaction) {
                     m = yield int.followUp({
-                        content: `Hey **${opponent.tag}**. You got a RPS invitation !`,
+                        content: `Hey **${opponent.tag}**, you got a rock paper scissors invitation!`,
                         embeds: [acceptEmbed],
                         components: [acceptComponents]
                     });
                 }
                 else if (!interaction) {
                     m = yield mes.reply({
-                        content: `Hey ${opponent.tag}. You got a RPS invitation !`,
+                        content: `Hey ${opponent.tag}, you got a rock paper scissors invitation!`,
                         embeds: [acceptEmbed],
                         components: [acceptComponents],
                         allowedMentions: { repliedUser : false }
@@ -203,7 +200,7 @@ function rps(message, options = {}) {
                 acceptCollector.on('collect', (button) => __awaiter(this, void 0, void 0, function* () {
                     if (button.user.id !== opponent.id)
                         return yield button.reply({
-                            content: 'You cannot play the game.',
+                            content: "You can't play this game.",
                             ephemeral: true
                         });
                     yield button.deferUpdate();
@@ -239,7 +236,7 @@ function rps(message, options = {}) {
                         yield b.deferUpdate();
                         if (!ids.has(b.user.id)) {
                             yield button.followUp({
-                                content: 'You cannot play the game.',
+                                content: "You can't play this game.",
                                 ephemeral: true
                             });
                             return;
@@ -318,7 +315,7 @@ function rps(message, options = {}) {
                                     content: '** **',
                                     embeds: [
                                         new discord_js_1.EmbedBuilder()
-                                            .setTitle(`${opponent.tag} Won !`)
+                                            .setTitle(`${opponent.tag} wins!`)
                                             .setColor(options.winColor)
                                             .setDescription(`**${op}** defeats **${auth}**`)
                                             .setFooter({text: 'Well done!'})
@@ -349,7 +346,7 @@ function rps(message, options = {}) {
                                     content: '** **',
                                     embeds: [
                                         new discord_js_1.EmbedBuilder()
-                                            .setTitle(`${message.member.user.tag} Won !`)
+                                            .setTitle(`${message.member.user.tag} wins!`)
                                             .setColor(options.winColor)
                                             .setDescription(`**${auth}** defeats **${op}**`)
                                             .setFooter({text: 'Well done!'})
@@ -398,7 +395,7 @@ function rps(message, options = {}) {
                 }));
             }
             catch (err) {
-                console.log(`${chalk_1.default.red('Error Occured.')} | ${chalk_1.default.magenta('menuPages')} | Error: ${err.stack}`);
+                console.log(`${chalk_1.default.red('RPS error:')} | ${chalk_1.default.magenta('rps')} | ${err.stack}`);
             }
         }));
     });

@@ -4,7 +4,7 @@ module.exports = {
     aliases: ['createch', 'newch'],
     usage: "sm create-channel <channel-name>",
     category: "Channel Manager",
-    description: "Create a new channel! This command can only be used by admin.",
+    description: "Create a new channel in the setup category. Bot owner only.",
     ownerOnly: true,
     run: async (client, message, args) => {
         if (!args[0]){
@@ -15,7 +15,7 @@ module.exports = {
         message.guild.channels.create({ name: args.join('-'), type: client.discord.ChannelType.GuildText, parent: category.id }).then(ch => {
             const embed = new client.discord.EmbedBuilder()
                 .setTitle("📜 Channel Create")
-                .addFields({name: `Success! ✅`, value: `Successfully created <#${ch.id}> in **${ch.parent.name}** category!`})
+                .addFields({name: `Success! ✅`, value: `Created <#${ch.id}> in **${ch.parent.name}**.`})
                 .setColor(client.config.embedColor)
                 .setFooter({ text: `${client.config.embedFooterText1}`})
                 .setTimestamp();

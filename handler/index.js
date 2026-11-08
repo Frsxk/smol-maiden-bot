@@ -17,7 +17,7 @@ const loadEvents = async function (client) {
             if (event.name) {
                 console.log(chalk.bgBlueBright.black(` ✔️ => Event ${file} is being loaded `));
             } else {
-                console.log(chalk.bgRedBright.black(` ❌ => Event ${file} missing a help.name or help.name is not in string `));
+                console.log(chalk.bgRedBright.black(` ❌ => Event ${file} missing a name, or its name isn't a string `));
                 continue;
             }
             
@@ -47,7 +47,7 @@ const loadCommands = async function (client) {
                 client.commands.set(command.name, command);
                 console.log(chalk.bgBlueBright.black(` ✔️ => Prefix Command ${file} is being loaded `));
             } else {
-                console.log(chalk.bgRedBright.black(` ❌ => Prefix Command ${file} missing a help.name or help.name is not in string `));
+                console.log(chalk.bgRedBright.black(` ❌ => Prefix Command ${file} missing a name, or its name isn't a string `));
                 continue;
             }
             
@@ -58,7 +58,7 @@ const loadCommands = async function (client) {
 }
 
 /*
-  Load SlashCommands
+  Load Slash Commands
 */
 
 const loadSlashCommands = async function (client) {
@@ -78,7 +78,7 @@ const loadSlashCommands = async function (client) {
                 slash.push(command)
                 console.log(chalk.bgBlueBright.black(` ✔️ => Slash Command ${file} is being loaded `));
             } else {
-                console.log(chalk.bgRedBright.black(` ❌ => Slash Command ${file} missing a help.name or help.name is not in string `));
+                console.log(chalk.bgRedBright.black(` ❌ => Slash Command ${file} missing a name, or its name isn't a string `));
                 continue;
             }
         }
@@ -93,7 +93,7 @@ const loadSlashCommands = async function (client) {
 
         // Register Slash Commands for all the guilds
         await client.application.commands.set(slash)
-        console.log(chalk.bgBlueBright.black(` ✔️ => Slash Commands succcessfully registered `))
+        console.log(chalk.bgBlueBright.black(` ✔️ => Slash Commands successfully registered `))
     })
 }
 

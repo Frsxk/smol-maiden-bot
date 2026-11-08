@@ -6,7 +6,7 @@ module.exports = {
     aliases: ["exec", "execute"],
     usage: "sm run <command>",
     category: "lmao",
-    description: "Run a command in the console",
+    description: "Start a process in the bot's runtime. Output goes to the bot console.",
     ownerOnly: true,
     run: async (client, message, args) => {
         if (!args.length) return message.reply("Please provide a command to run.");
@@ -27,7 +27,7 @@ module.exports = {
             });
 
             await wait(500);
-            message.channel.send("Successfully executed.");
+            message.channel.send("Process request sent. Check the bot console for the result.");
         } catch (err) {
             const array = ["lmao", "😴", "😪", "owo7", "xd", "sleep?"];
             const random = Math.floor(Math.random() * array.length);
@@ -36,7 +36,7 @@ module.exports = {
                 .setColor(client.config.embedColor)
                 .setFooter({ text: `${array[random]}`})
                 .setTimestamp();
-            return message.reply({content: "An error occurred when trying to execute command.", embeds: [errEmbed], allowedMentions: { repliedUser: false } });
+            return message.reply({content: "I couldn't start that command.", embeds: [errEmbed], allowedMentions: { repliedUser: false } });
         }
     }
 }

@@ -7,7 +7,6 @@ module.exports = {
     description: "Move your channel to the next category!",
     ownerOnly: false,
     run: async (client, message, args) => {
-        // Channels constants
         const chnl = message.mentions.channels.first();
         const cate3 = message.guild.channels.cache.find(channel => channel.id === '954368431329787924');
         const cate2 = message.guild.channels.cache.find(channel => channel.id === '954368406839246908');
@@ -17,11 +16,10 @@ module.exports = {
         const lvl2 = message.guild.roles.cache.find(role => role.name === "level 2");
         const lvl3 = message.guild.roles.cache.find(role => role.name === "level 3");
 
-        // What an idea to use a function instead..
         function moveChannel(category) {
             chnl.setParent(category).then(ch => {
                 const embed = new client.discord.EmbedBuilder()
-                    .addFields({name: 'Success! :white_check_mark:', value: `${args[0]} successfully moved to **${ch.parent.name}** category!`})
+                    .addFields({name: 'Success! :white_check_mark:', value: `Moved ${args[0]} to **${ch.parent.name}**.`})
                     .setColor(client.config.embedColor)
                     .setFooter({text: `${client.config.embedFooterText1}`})
                     .setTimestamp();
@@ -38,30 +36,24 @@ module.exports = {
             return message.reply({ embeds: [errrorEmbed1], allowedMentions: { repliedUser : false } });
         }
         
-        // Check if argument is empty and / or not a channel
         if (!chnl) {
             const errorEmbed = new client.discord.EmbedBuilder()
                 .setTitle('Failed! :no_entry_sign:')
-                .addFields({name: "Please mention your channel to use this command!", value: "Usage: sm upgrade <#channel>", inline: true})
+                .addFields({name: "Mention the channel you want to move.", value: "Usage: sm upgrade <#channel>", inline: true})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`})
                 .setTimestamp();
             return message.reply({ embeds: [errorEmbed], allowedMentions: { repliedUser : false } });
         }
 
-       // Check if argument is a channel
         if (chnl) {
-            if (chnl.parent == cate1) {                
-                // Check if user has x role
+            if (chnl.parent == cate1) {
                 if (message.member.roles.cache.some(role => role.name === 'level 3')) {
-                    // Set a new parent (category) for the channel
                     moveChannel(cateTop);
                 } else {
-                    // If user is missing the role
                     missingRole(lvl3);
                 }
             }
-            // Repeat!
             if (chnl.parent == cate2) {
                 if (message.member.roles.cache.some(role => role.name === 'level 2')) {
                     moveChannel(cate1);
@@ -77,11 +69,10 @@ module.exports = {
                 }
             }
             
-            // Error message..
             if(chnl.parent !== (cate1 || cate2 || cate3)) {
                 const errEmbed = new client.discord.EmbedBuilder()
                     .setTitle("Failed! :no_entry_sign:")
-                    .addFields({ name: "Please enter a valid channel to use this command!", value: "Channels in **category1**, **category2**, and **category3** is valid option for this command.", inline: true })
+                    .addFields({ name: "That channel isn't in a category this command can upgrade.", value: "Pick a channel from the levelling categories.", inline: true })
                     .setColor(client.config.embedColor)
                     .setFooter({ text: `${client.config.embedFooterText1} `})
                     .setTimestamp();

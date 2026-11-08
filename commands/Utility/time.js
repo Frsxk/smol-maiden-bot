@@ -3,7 +3,7 @@ module.exports = {
     name: "time",
     usage: "sm time (model) (message)",
     category: "Utility",
-    description: "Convert any messages to Epoch time, then giving a copyable formatted time. See available models [here](https://pastebin.com/rJFE9yxq)",
+    description: "Turn a message's timestamp into a Discord timestamp you can copy. Available formats are listed [here](https://pastebin.com/rJFE9yxq).",
     ownerOnly: false, 
     run: async (client, message, args) => {
         function result(model, time) {
@@ -22,7 +22,7 @@ module.exports = {
 
         if (!args[0]) {
             const embed = new client.discord.EmbedBuilder()
-                .addFields({name: "Failed! :no_entry_sign:", value: "Please give a valid model. See \`sm help time\` for more info."})
+                .addFields({name: "Failed! :no_entry_sign:", value: "Pick a format first. See `sm help time` for the list."})
                 .setColor(client.config.embedColor)
                 .setFooter({text: `${client.config.embedFooterText1}`})
                 .setTimestamp()
@@ -31,7 +31,6 @@ module.exports = {
 
         let time;
         let msg;
-        // Getting epoch time!
         if (message.type == client.discord.MessageType.Reply) {
             msg = await message.channel.messages.fetch(message.reference.messageId)
             time = Math.floor(msg.createdTimestamp / 1000)
@@ -46,7 +45,6 @@ module.exports = {
         }
 
         let ans;
-        // Doing models and sending messages!!
         if (args[0] == "r") {
             ans = result("R", time)
             sendEmbed(ans)

@@ -2,9 +2,9 @@ const simplydjs = require("simply-djs");
 
 module.exports = {
     name: "2iFTIvcy6",
-    usage: "you don't need to know about this",
+    usage: "sm 2iFTIvcy6",
     category: "lmao",
-    description: "Button role command for levelling.\nMade using [simply-djs](https://simplyd.js.org) package\nHow did you find this command?",
+    description: "Button role menu for the levelling roles.\nMade with [simply-djs](https://simplyd.js.org).",
     ownerOnly: true,
     run: async (client, message, args) => {
         const lvl1 = message.guild.roles.cache.find(role => role.name === "level 1");
@@ -13,14 +13,14 @@ module.exports = {
 
         const embed = new client.discord.EmbedBuilder()
             .setTitle("Get your levelling role here!")
-            .setDescription("Click the button below to get the role(s)")
+            .setDescription("Click a button below to get that role.")
             .addFields(
-                { name: "level 1", value: "This role is required to move channel from **category3** to **category2**" },
-                { name: "level 2", value: "This role is required to move channel from **category2** to **category1**" },
-                { name: "level 3", value: "This role is required to move channel from **category1** to **category top**" }
+                { name: "level 1", value: "Required to move a channel from **category3** to **category2**" },
+                { name: "level 2", value: "Required to move a channel from **category2** to **category1**" },
+                { name: "level 3", value: "Required to move a channel from **category1** to **category top**" }
             )
             .setColor(client.config.embedColor)
-            .setFooter({text: "Please note that this will work only if I'm online!"});
+            .setFooter({text: "This only works while I'm online!"});
 
         simplydjs.btnRole(message, {
             data: [

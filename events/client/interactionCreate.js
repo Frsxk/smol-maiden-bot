@@ -20,11 +20,11 @@ module.exports = {
         if (!interaction.isChatInputCommand()) return;
         
         const command = client.slash.get(interaction.commandName);
-        if (!command) return interaction.reply({ content: 'Unknown Error occurred.', ephemeral: true });
+        if (!command) return interaction.reply({ content: 'Something went wrong. That command is not loaded.', ephemeral: true });
         
         if (command.ownerOnly) {
             if (interaction.user.id !== client.config.ownerID) {
-                return interaction.reply({ content: "This command is only for Bot Owner!", ephemeral: true });
+                return interaction.reply({ content: "Only the bot owner can use this command.", ephemeral: true });
             }
         }
 

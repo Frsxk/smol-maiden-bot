@@ -3,7 +3,7 @@ const rps = require("../../src/rps");
 module.exports = {
     name: "turu",
     category: "lmao",
-    description: "Just a test command",
+    description: "Challenge someone to rock paper scissors.",
     ownerOnly: false,
     run: async (client, message, interaction, args) => {
         function turu(ms) {
@@ -16,18 +16,11 @@ module.exports = {
                     name: message.author.tag,
                     iconURL: message.author.displayAvatarURL(),
                 },
-                title: `RPS request for ${message.mentions.users.first()} !`,
+                title: `Rock paper scissors request for ${message.mentions.users.first()}!`,
                 footer: {text: "Good Luck!"},
                 color: client.config.embedColor,
-                description: "Rock paper scissor game made using simply-djs",
+                description: "Rock paper scissors, powered by simply-djs.",
             },
         })
     }
 }
-/*
-const msg = args[0];
-const chnl = client.channels.resolve(msg);
-chnl.setParent('954368406839246908')
-    .then(message.reply('turu mint :herb:'))
-    .catch(console.error);     
-*/

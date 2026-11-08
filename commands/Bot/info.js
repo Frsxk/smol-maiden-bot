@@ -8,8 +8,8 @@ module.exports = {
     description: "Some information about me, and my owner!",
     ownerOnly: false,
     run: async (client, message, args) => {
-        const frxskie = message.guild.members.cache.find(user => user.id === ownerID); // To make owner as a constant
-        const row = new client.discord.ActionRowBuilder() // Button components of EmbedBuilder
+        const frxskie = message.guild.members.cache.find(user => user.id === ownerID);
+        const row = new client.discord.ActionRowBuilder()
             .addComponents(
                 new client.discord.ButtonBuilder()
                     .setLabel("Discord.js")
@@ -34,7 +34,7 @@ module.exports = {
         
         const embed = new client.discord.EmbedBuilder()
             .setTitle(`About ${client.user.username}`)
-            .addFields({name: `Hello there, ${name}`, value: `Smol Maiden is made by **@${frxskie.user.username}** using Discord.js, and some node modules. This bot is still private at the moment, and is not open sourced. I'm using Discord.js-v13-Example template created by Expectatives on Github. My development is helped by Friends, and countless amount of tutorials.`, inline: true})
+            .addFields({name: `Hello there, ${name}`, value: `Smol Maiden is made by **@${frxskie.user.username}** with Discord.js and a few Node modules. She's based on the Discord.js-v13-Example template by Expectatives, with help from friends and plenty of tutorials.`, inline: true})
             .setColor(client.config.embedColor)
             .setThumbnail(frxskie.displayAvatarURL({ size: 4096 }))
             .setTimestamp()

@@ -6,18 +6,17 @@ module.exports = {
      * @param {Client} client 
      */
     async execute(message, client) {
-        // Blacklist a channel from the bot
+        // Channels where the bot should stay quiet
         const blockedChannels = ['674556658248187926', '954368773090082846', '954368755872464926', '956890086845317122'];
         if (blockedChannels.includes(message.channel.id)) return;
 
-        // Block user(s) from using the bot
         const blockedUsers = ['12345678909876543456'];
         if (blockedUsers.includes(message.author.id)) {
-            return message.reply({ content: `<@!${message.author.id}>, You are banned from using this bot.`, allowedMentions: {repliedUser: true} });
+            return message.reply({ content: `<@!${message.author.id}>, you're banned from using this bot.`, allowedMentions: {repliedUser: true} });
         }
         
         if (message.content.startsWith(`<@${client.user.id}>`) || message.content.startsWith(`<@!${client.user.id}>`)) {
-            return message.reply({content: `Hey **${message.author.username}**, My prefix is \`sm \`\nCheck out \`sm help\` to see all available commands!`, allowedMentions: { repliedUser: false} });
+            return message.reply({content: `Hey **${message.author.username}**, my prefix is \`sm \`.\nRun \`sm help\` to see what I can do.`, allowedMentions: { repliedUser: false} });
         }
 
         if (message.author.bot || !message.guild || !message.content.toLowerCase().startsWith(client.config.botPrefix)) return;
@@ -28,7 +27,7 @@ module.exports = {
 
         if (command.ownerOnly) {
             if (message.author.id !== client.config.ownerID) {
-                return message.reply({ content: "This command is only for Bot Owner!", allowedMentions: { repliedUser: false } });
+                return message.reply({ content: "Only the bot owner can use this command.", allowedMentions: { repliedUser: false } });
             }
         }
         
