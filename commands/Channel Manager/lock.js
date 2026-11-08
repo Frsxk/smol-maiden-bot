@@ -1,43 +1,73 @@
-const { requireOwnership } = require('../../utils/channelManager');
+const {
+    requireOwnership,
+    getBotId,
+    fetchFreshChannel,
+    safeReply,
+    describeApplyFailure,
+} = require('../../utils/channelManager');
+const { applyChannelState, withChannelLock } = require('../../utils/channelPermissions');
 
 module.exports = {
-    name: "lock",
-    aliases: ["l"],
-    usage: "sm lock",
-    category: "Channel Manager",
-    description: "Lock your channel — hides it from everyone except whitelisted users!",
+    name: 'lock',
+    aliases: ['l'],
+    usage: 'sm lock',
+    category: 'Channel Manager',
+    description: 'Hide your channel from ordinary members. Owner, bot, and whitelisted members keep access.',
     ownerOnly: false,
     run: async (client, message, args) => {
-        const { doc, error } = await requireOwnership(message, client);
-        if (error === 'nochannel') {
-            return message.reply({ content: "This channel has no owner. Use `sm claim` in your personal channel first!", allowedMentions: { repliedUser: false } });
-        }
-        if (error === 'notowner') {
-            return message.reply({ content: "Only the channel owner (or a server admin) can lock this channel!", allowedMentions: { repliedUser: false } });
-        }
+        return withChannelLock(message.channel.id, async () => {
+            try {
+                const { doc, error } = await requireOwnership(message, client);
+                if (error === 'db') {
+                    return safeReply(message, { content: 'The channel registry is unavailable right now. Try again in a moment.' });
+                }
+                if (error === 'nochannel') {
+                    return safeReply(message, { content: 'This channel has no owner. Use `sm claim` in your personal channel first!' });
+                }
+                if (error === 'notowner') {
+                    return safeReply(message, { content: 'Only the channel owner, a server admin, or the bot owner can lock this channel.' });
+                }
 
-        if (doc.locked) {
-            return message.reply({ content: "This channel is already locked!", allowedMentions: { repliedUser: false } });
-        }
+                const fresh = await fetchFreshChannel(message);
+                if (fresh.error) {
+                    return safeReply(message, { content: "I couldn't refresh this channel's permissions from Discord. Nothing was changed; try again." });
+                }
 
-        const channel = message.channel;
+                const wasLocked = Boolean(doc.locked);
+                const result = await applyChannelState(
+                    fresh.channel,
+                    doc,
+                    { locked: true, whitelist: doc.whitelist || [], blacklist: doc.blacklist || [] },
+                    getBotId(client, message),
+                    `Channel Manager: lock #${fresh.channel.name || fresh.channel.id}`,
+                );
 
-        // Hide from @everyone, then keep the owner + whitelisted users visible
-        await channel.permissionOverwrites.edit(channel.guild.roles.everyone, { ViewChannel: false });
-        await channel.permissionOverwrites.edit(doc.userId, { ViewChannel: true });
-        for (const userId of doc.whitelist) {
-            await channel.permissionOverwrites.edit(userId, { ViewChannel: true }).catch(() => null);
-        }
+                if (!result.ok) {
+                    return safeReply(message, { content: describeApplyFailure(result) });
+                }
 
-        doc.locked = true;
-        await doc.save();
+                const whitelisted = result.state.whitelist.length;
+                const visibility = whitelisted
+                    ? `The channel owner, ${whitelisted} whitelisted member(s), and the bot keep access.`
+                    : 'The channel owner and bot keep access.';
+                const note = wasLocked
+                    ? 'This channel was already locked; permissions were re-applied to match the registry.'
+                    : 'Server administrators and the server owner can still see it because Discord grants them access.';
 
-        const embed = new client.discord.EmbedBuilder()
-            .setTitle("🔒 Lock - Channel Manager")
-            .addFields({ name: "Success! ✅", value: `Locked <#${channel.id}>. Only you${doc.whitelist.length ? ` and ${doc.whitelist.length} whitelisted user(s)` : ""} can see it now!` })
-            .setColor(client.config.embedColor)
-            .setFooter({ text: `${client.config.embedFooterText1}` })
-            .setTimestamp();
-        return message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
-    }
-}
+                const embed = new client.discord.EmbedBuilder()
+                    .setTitle('🔒 Lock - Channel Manager')
+                    .addFields({
+                        name: 'Success! ✅',
+                        value: `Locked <#${message.channel.id}>. ${visibility}\n${note}`,
+                    })
+                    .setColor(client.config.embedColor)
+                    .setFooter({ text: `${client.config.embedFooterText1}` })
+                    .setTimestamp();
+                return safeReply(message, { embeds: [embed] });
+            } catch (error) {
+                console.error('[Channel Manager] lock failed:', error && error.message ? error.message : error);
+                return safeReply(message, { content: "I couldn't finish locking this channel. Check its permissions before trying again." });
+            }
+        });
+    },
+};
