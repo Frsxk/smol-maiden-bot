@@ -1,110 +1,155 @@
-# Smol Maiden Discord Bot
+# Smol Maiden
 
 <p align="center">
-  <img src="./src/profile.jpg" alt="Smol Maiden Profile Picture" title="Smol Maiden profile picture" width="200"/>
+  <img src="./src/profile.jpg" alt="Smol Maiden's profile picture" width="200">
 </p>
 
-Smol Maiden#1515 is a cute, smol Discord bot made using [Discord.js](https://discord.js.org/) v14 — and she is **free and open source**! Use her, modify her, self-host her~ 🩷
+A small Discord.js bot for personal channels, utilities, and games. Made by [frisky](https://github.com/Frsxk), with a soft spot for pink. 🩷
 
-The only support and testing server is [here](https://discord.gg/2SatpX28ZX).
+Smol Maiden is open source under the [ISC license](./LICENSE). You can run your own instance or adapt the commands for your server.
 
-## ✨ Features
+## Requirements
 
-- Prefix commands (`sm <command>`) and slash commands (`/help`, `/ping`, `/calc`)
-- Fun & utility: calculator (via [mathjs](https://mathjs.org/)), avatars, giveaways & rock-paper-scissors (via [simply-djs](https://simplyd.js.org)), headpats (via [pet-pet-gif](https://github.com/aiko-chan-asa/pet-pet-gif))
-- Channel helpers: create, pin, unpin, pins count, upgrade
-- MongoDB support (optional) via [mongoose](https://mongoosejs.com/)
-- Docker support for easy deployment
+- Node.js 22 or newer and npm. The Docker image uses Node.js 22.
+- A Discord bot account.
+- MongoDB for Channel Manager. Without `MONGODB`, the bot starts with those commands disabled.
 
-## 📋 Requirements
+The project uses the versions in `package-lock.json`; install them with `npm ci`.
 
-- [Node.js](https://nodejs.org/) 18+ and [npm](https://www.npmjs.com/)
-- A [Discord application](https://discord.com/developers/applications) with a bot account
-- (Optional) a MongoDB database — [MongoDB Atlas](https://www.mongodb.com/atlas) has a free tier
+## Run locally
 
-## 🚀 Setup
+```sh
+git clone https://github.com/Frsxk/smol-maiden-bot.git
+cd smol-maiden-bot
+npm ci
+cp .env.example .env
+```
 
-1. **Clone and install**
-   ```sh
-   git clone https://github.com/Frsxk/smol-maiden-bot.git
-   cd smol-maiden-bot
-   npm install
+If your npm version blocks dependency install scripts, approve the pinned `canvas` entry before rebuilding it:
+
+```sh
+npm approve-scripts canvas
+npm rebuild canvas
+```
+
+Older npm versions run that install script during `npm ci`. Canvas may need your platform's native build dependencies if a prebuilt binary is unavailable.
+
+1. Create an application and bot in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Under **Bot**, enable **Server Members Intent**, **Presence Intent**, and **Message Content Intent**. The current client requests all three.
+3. Invite the bot using the `bot` and `applications.commands` scopes. Give it the permissions needed for the commands you plan to use. Channel Manager needs **View Channel**, **Send Messages**, and **Manage Roles** to edit channel permission overwrites. Embed replies also need **Embed Links**.
+4. Put your token in `.env`. Add `MONGODB` if you want Channel Manager:
+
+   ```dotenv
+   TOKEN=your-bot-token-here
+   MONGODB=
    ```
-2. **Create your bot** on the [Discord Developer Portal](https://discord.com/developers/applications), then under **Bot**:
-   - copy your **token**
-   - enable the **privileged intents** the bot uses: *Server Members*, *Message Content*, and *Presence* — Smol Maiden will refuse to start without them
-3. **Invite the bot** to your server using the OAuth2 URL Generator with the `bot` scope (and `applications.commands` for slash commands)
-4. **Configure** — copy `.env.example` to `.env` and fill in:
-   ```
-   TOKEN=your-bot-token
-   MONGODB=your-mongodb-uri   # optional, for mongo-backed features
-   ```
-   Then edit `config.js` for your own instance:
-   - `botClientID` and `ownerID` → **your** application/user IDs
-   - `botPrefix`, `embedColor`, footer texts → taste~
-   > ⚠️ `ownerID` matters! Several commands (`run`, `echo`, `restart`, `shutdown`, …) are owner-only and `run` executes commands on the host machine — only point it at yourself.
-5. **Start**
+
+5. Edit `config.js`: set `botClientID` to your application ID and `ownerID` to your Discord user ID. You can also change the prefix, embed colour, and footers.
+
+   Only trusted operators should be bot owners. `sm run` executes a program inside the bot's runtime. In Docker, that means inside the container, not on the host.
+
+6. Start the bot:
+
    ```sh
    npm start
    ```
 
-## 🐳 Docker
+When `MONGODB` is set, startup waits for the database and ownership indexes before logging in to Discord. A failed connection stops startup. If MongoDB disconnects later, Channel Manager replies that the registry is unavailable instead of buffering commands.
+
+The bot registers its slash commands globally at startup. Use a separate application for development if you do not want to overwrite your production application's command list.
+
+## Run with Docker
+
+Configure `.env` and `config.js` first, then run:
 
 ```sh
-docker compose up -d        # build & run in background
-docker compose logs -f      # follow logs
-docker compose down         # stop
+docker compose up --build -d
+docker compose logs -f bot
+docker compose down
 ```
-Secrets are injected at runtime from your local `.env` (never baked into the image).
 
-## 📜 Commands
+Compose reads `.env` at runtime. The Docker build excludes it, and the container runs as a non-root user with a read-only root filesystem. After changing `.env`, recreate the container so it receives the new values.
 
-Prefix is `sm ` (with a space). Run `sm help` in Discord for the live list.
+The image's healthcheck only tests whether it can load Discord.js. It does **not** prove that the bot is logged in or that MongoDB is connected; check the startup logs for both.
 
-**Everyone:**
+## Personal channels
 
-| Command | Aliases | What it does |
-|---|---|---|
-| `sm help [command]` | `h`, `commands` | List commands or details for one |
-| `sm info` | `i`, `information` | Bot info |
-| `sm list` | `cmd`, `ls` | List commands by category |
-| `sm ping` | `pong`, `latency` | Bot latency |
-| `sm avatar [user]` | `av`, `profile`, `pfp` | Show someone's avatar (user & server versions) |
-| `sm calc <expression>` | `calculate`, `c` | Calculator powered by mathjs |
-| `sm time` | — | Current time |
-| `sm create-ch` | — | Create a channel |
-| `sm pin` / `sm unpin` | — | Pin/unpin in your channel |
-| `sm pinscount` | `pc` | Count pinned messages |
-| `sm upgrade` | — | Channel upgrade helper |
-| `sm patthearifin` | `petthearifin`, `arifin`, `afn` | Headpats 🐾 |
-| `sm turu` | — | Rock-paper-scissors |
+Run these commands inside the channel you want to manage. Ownership is stored by user and channel ID, so renaming a channel does not change its owner.
 
-**Slash commands:** `/help`, `/ping`, `/calc`
+- `sm claim` registers the current text channel. You need **Manage Channels in that channel**, and it must not already belong to someone else. Each user can own one channel across all servers served by the same database. Threads and voice channels cannot be claimed.
+- `sm lock` hides the channel from ordinary members, including those with existing role or member view allows. The channel owner, bot, and whitelisted members keep access.
+- `sm unlock` restores the channel's previous view permissions. It does not make a previously private channel public. Blacklisted members remain denied.
+- `sm whitelist add <user>` lets a member see the channel while it is locked.
+- `sm whitelist remove <user>` removes that exception.
+- `sm blacklist add <user>` denies a member access whether the channel is locked or unlocked. It also removes that member from the whitelist.
+- `sm blacklist remove <user>` removes the blacklist restriction. It does not whitelist the member or override the channel's other access rules.
 
-**Owner-only:** `sm run`, `sm echo`, `sm gstart`, `sm restart`, `sm shutdown`, `sm resetpos` (plus a couple of secret ones — how did you even find this README? 👀)
+The channel owner, server administrators, and configured bot owner can run the four management commands. Claiming still requires the caller's **Manage Channels** permission. `create-channel` remains bot-owner-only; it does not assign ownership automatically.
 
-> Some legacy Channel Manager commands (`lock`, `unlock`, `blacklist`, `whitelist`) are discontinued stubs kept for history.
+For `<user>`, use a mention, user ID, or exact Discord username. Matching ignores case and does not use display names or server nicknames. Adding someone requires current server membership. After they leave, you can still remove them by ID or mention.
 
-## 🛠️ Tech
+Blacklist takes precedence over whitelist. Remove a member from the blacklist before adding them to the whitelist again. Discord administrators and the server owner bypass channel overwrites, so they cannot be hidden or blacklisted. The bot and channel owner are also protected from blacklisting.
 
-- [Discord.js](https://discord.js.org/) v14
-- [simply-djs](https://simplyd.js.org) — giveaways, button roles, RPS
-- [mathjs](https://mathjs.org) — calculator
-- [pet-pet-gif](https://github.com/aiko-chan-asa/pet-pet-gif) — headpats
-- [mongoose](https://mongoosejs.com/) — MongoDB ODM (optional)
-- Started from [Expectative's Discord.js bot example](https://github.com/Expectatives/Discord.js-v13-Example/) — big thanks to them!
+Permission updates preserve unrelated allow/deny bits. If saving the state fails after a Discord update, the bot attempts to restore the previous overwrites. If that rollback also fails, the reply asks an operator to inspect the permissions. Run one bot process per token and database; the command queue does not coordinate multiple instances, and Discord and MongoDB do not share a transaction. Do not edit view permissions manually while a channel is locked if you expect those edits to survive its later unlock.
 
-## 📮 Contact
+## Command reference
 
-To report bugs or abuse, please join [the support server](https://discord.gg/2SatpX28ZX).
-If you want to chat, add me as a friend on Discord: `@frxskie`
+The default prefix is `sm `, including the space. `sm help <command>` shows a command's description and usage.
 
-## 🎨 Credits
+### Utilities
 
-- Smol Maiden's adorable profile picture: [@kudukimii](https://twitter.com/kudukimii) on twt/X
+- `sm help [command]` (`h`, `commands`): command help.
+- `sm info` (`i`, `information`): bot and owner information.
+- `sm list` (`cmd`, `ls`): list commands by category.
+- `sm ping` (`pong`, `latency`): bot latency.
+- `sm avatar [user]` (`av`, `profile`, `pfp`): user and server avatars.
+- `sm calc <expression>` (`calculate`, `c`): evaluate an expression with mathjs.
+- `sm time <format> [message]`: turn a message timestamp into Discord timestamp markup. See the command help for accepted formats.
 
-## 📄 License
+Slash commands: `/help`, `/ping`, `/calc`.
 
-This project is licensed under the [ISC License](./LICENSE) — do whatever you like, just keep the notice~
+### Channel controls
 
-*Smol Maiden is such a cutie.* 🩷
+- `sm claim`: register ownership.
+- `sm lock` (`l`) / `sm unlock` (`ul`): change channel visibility.
+- `sm whitelist add/remove <user>` (`wl`, `invite`): manage locked-channel exceptions.
+- `sm blacklist add/remove <user>` (`bl`, `uninvite`): manage access restrictions.
+- `sm pin <message>` (`p`) / `sm unpin <message>` (`unp`): pin or unpin messages, subject to the command's permission checks.
+- `sm pinscount` (`pc`): count fetched pins. The legacy command does not yet follow pagination.
+- `sm upgrade`: the original server's category-upgrade helper.
+
+### Games and server-specific commands
+
+`sm turu` starts the local rock-paper-scissors module. `sm patthearifin` generates a headpat GIF for a fixed user. The owner-only `sm gstart` command uses simply-djs for giveaways.
+
+Several older commands still contain the original server's channel, category, role, or message IDs. Review `create-ch.js`, `upgrade.js`, `resetpos.js`, and the rules/button-role commands before using them on another server. They are not configurable server-management features yet.
+
+Other owner-only commands include `sm create-channel`, `sm echo`, `sm run`, `sm restart`, and `sm shutdown`. Restart and shutdown call PM2; the supplied Docker image does not include PM2.
+
+## Development and checks
+
+```sh
+npm test
+npm run dev
+```
+
+`npm test` runs the Channel Manager regression suite with fake Discord and MongoDB boundaries and real Discord.js permission flags. It does not log in to Discord or connect to a database. `npm run dev` starts the actual bot under nodemon and needs your local configuration.
+
+After changing channel permissions, test with a non-admin account in a development server. An administrator account cannot verify that a channel is hidden.
+
+## Dependencies and known limits
+
+- Discord.js provides the Discord client and builders.
+- Mongoose stores channel ownership and saved view-permission baselines.
+- mathjs handles calculator expressions.
+- pet-pet-gif uses Canvas for GIF generation. Keep the direct `canvas` dependency and override; the package imports Canvas without declaring it directly.
+- simply-djs supports some legacy game and role flows. npm marks version 4.1.1 as unsupported. This release keeps it for compatibility; it does not replace that library or certify every legacy command.
+- The remaining npm audit findings concern node-cron 3's transitive uuid dependency ([GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq)). npm proposes a node-cron major upgrade; that migration is outside this release. Run `npm audit` to check the current advisory state.
+
+Keep `.env`, database dumps, and tokens out of Git. If a credential is exposed, rotate it; deleting the file or rewriting Git history does not revoke it. This public repository starts with a separate history from the old private deployment.
+
+## Credits and contact
+
+Smol Maiden began with [Expectatives' Discord.js v13 example](https://github.com/Expectatives/Discord.js-v13-Example/). The local RPS module is adapted from simply-djs. Profile art is credited to [@kudukimii](https://twitter.com/kudukimii); the software license does not grant separate rights to that artwork.
+
+Report bugs through [GitHub issues](https://github.com/Frsxk/smol-maiden-bot/issues) or join the [support server](https://discord.gg/2SatpX28ZX). You can also find frisky on Discord as `@frxskie`.

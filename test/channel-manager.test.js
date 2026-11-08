@@ -1140,4 +1140,3 @@ test('blacklist rejects the channel owner, bot, guild owner, and administrators'
     assert.equal(state.saveCount, 0);
     assert.equal(env.channel.setCallCount, 0);
 });
-
