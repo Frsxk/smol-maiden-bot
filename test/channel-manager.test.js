@@ -1088,3 +1088,56 @@ test('model double enforces the unique userId/channelId contract used by claim',
         (error) => Number(error.code) === 11000 && error.keyPattern.channelId === 1,
     );
 });
+
+test('real Discord.js permission resolution hides a role-allowed member and restores their unrelated deny', async () => {
+    const { Client, TextChannel, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+    const env = fresh();
+    const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    try {
+        const guild = client.guilds._add({ id: G1, name: 'Fixture', unavailable: false });
+        const roleId = '101010101010101010';
+        guild.roles._add({ id: G1, name: '@everyone', permissions: String(VIEW | SEND), position: 0 });
+        guild.roles._add({ id: roleId, name: 'Reader', permissions: '0', position: 1 });
+        const member = guild.members._add({ user: { id: U2, username: 'guest', discriminator: '0', avatar: null }, roles: [roleId] });
+        const channel = new TextChannel(guild, {
+            id: C1, guild_id: G1, name: 'fixture', type: ChannelType.GuildText,
+            permission_overwrites: [{ id: roleId, type: ROLE, allow: String(VIEW), deny: String(SEND) }],
+        }, client);
+        channel.permissionOverwrites.set = async (entries) => {
+            channel.permissionOverwrites.cache.clear();
+            for (const entry of entries) channel.permissionOverwrites.cache.set(entry.id, {
+                ...entry, allow: new PermissionsBitField(entry.allow), deny: new PermissionsBitField(entry.deny),
+            });
+            return channel;
+        };
+        const doc = env.addDoc();
+        assert.equal(channel.permissionsFor(member).has(VIEW), true);
+        assert.equal((await applyChannelState(channel, doc, lockState(env), BOT)).ok, true);
+        assert.equal(channel.permissionsFor(member).has(VIEW), false);
+        assert.equal((await applyChannelState(channel, doc, lockState(env, { whitelist: [U2] }), BOT)).ok, true);
+        assert.equal(channel.permissionsFor(member).has(VIEW), true);
+        assert.equal((await applyChannelState(channel, doc, lockState(env, { locked: false }), BOT)).ok, true);
+        assert.equal(channel.permissionsFor(member).has(VIEW), true);
+        assert.equal(channel.permissionsFor(member).has(SEND), false);
+    } finally {
+        client.destroy();
+    }
+});
+
+test('blacklist rejects the channel owner, bot, guild owner, and administrators', async () => {
+    const env = fresh();
+    const doc = env.addDoc();
+    env.addMember(U1, 'channel_owner');
+    env.addMember(BOT, 'bot');
+    env.addMember(OWNER_USER, 'guild_owner');
+    env.addMember(ADMIN_USER, 'admin', { admin: true });
+    for (const id of [U1, BOT, OWNER_USER, ADMIN_USER]) {
+        const message = env.message(U1);
+        await blacklist.run(env.client, message, ['add', id]);
+        assert.match(textOf(message), /can't blacklist/);
+        assert.deepEqual(doc.blacklist, []);
+    }
+    assert.equal(state.saveCount, 0);
+    assert.equal(env.channel.setCallCount, 0);
+});
+
