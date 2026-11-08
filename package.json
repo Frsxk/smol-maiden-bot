@@ -1,12 +1,13 @@
 {
   "name": "smol-maiden",
   "version": "1.0.0",
-  "description": "Smol Maiden Bot by frxskie#1009",
+  "description": "A Discord.js bot with personal channel controls, utilities, and games.",
   "main": "index.js",
   "author": "frxskie#1009",
   "scripts": {
     "start": "node index.js",
-    "test": "nodemon index.js"
+    "test": "node --test test/*.test.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "license": "ISC",
@@ -28,11 +29,14 @@
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Frsxk/Smol-maiden.git"
+    "url": "git+https://github.com/Frsxk/smol-maiden-bot.git"
   },
-  "bugs": "https://github.com/Frsxk/Smol-maiden/issues",
-  "homepage": "https://github.com/Frsxk/Smol-maiden#readme",
+  "bugs": "https://github.com/Frsxk/smol-maiden-bot/issues",
+  "homepage": "https://github.com/Frsxk/smol-maiden-bot#readme",
   "overrides": {
     "canvas": "$canvas"
+  },
+  "allowScripts": {
+    "canvas@3.2.3": true
   }
 }
