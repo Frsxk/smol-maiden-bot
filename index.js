@@ -1,5 +1,5 @@
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const handler = require("./handler/index");
+const handler = require('./handler/index');
 
 const client = new Client({
     intents: [
@@ -17,39 +17,42 @@ const client = new Client({
     ],
 });
 
-const Discord = require('discord.js');
-
-// Call .env file to get Token
-require('dotenv').config()
-
-// Global Variables
-client.discord = Discord;
+client.discord = require('discord.js');
 client.slash = new Collection();
 client.commands = new Collection();
 client.config = require('./config');
-client.cwd = require('process').cwd(); // require('path').resolve(``);
+client.cwd = process.cwd();
 
 module.exports = client;
 
-// Records commands and events
-handler.loadEvents(client);
-handler.loadCommands(client);
-handler.loadSlashCommands(client);
+async function start() {
+    if (!process.env.TOKEN || process.env.TOKEN === 'your-bot-token-here') {
+        throw new Error('Set TOKEN in .env before starting the bot.');
+    }
+    if (client.config.MongoPath) {
+        await require('./mongo')();
+    } else {
+        console.warn('[MongoDB] MONGODB is unset. Channel Manager is disabled.');
+    }
+    await handler.loadEvents(client);
+    await handler.loadCommands(client);
+    await handler.loadSlashCommands(client);
+    await client.login(process.env.TOKEN);
+}
 
-// Error Handling
-process.on("uncaughtException", (err) => {
-    console.log("Uncaught Exception: " + err);
-});
-  
-process.on("unhandledRejection", (reason, promise) => {
-    console.log("[FATAL] Possibly Unhandled Rejection at:", promise, "reason: ", reason.message);
-});
-
-// Connect to mongo database (used by the Channel Manager ownership registry)
-const mongo = require("./mongo");
-mongo().catch((err) => {
-    console.error("[MONGO] Failed to connect:", err.message);
-});
-
-// Login Discord Bot Token
-client.login(process.env.TOKEN);
+if (require.main === module) {
+    process.on('uncaughtException', () => {
+        console.error('[Fatal] An uncaught exception stopped the bot.');
+        process.exit(1);
+    });
+    process.on('unhandledRejection', () => {
+        console.error('[Fatal] An unhandled rejection stopped the bot.');
+        process.exit(1);
+    });
+    start().catch(async (error) => {
+        console.error(`[Startup] ${error.name}: ${error.message}`);
+        client.destroy();
+        await require('mongoose').disconnect();
+        process.exitCode = 1;
+    });
+}

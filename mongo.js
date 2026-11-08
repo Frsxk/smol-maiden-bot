@@ -1,15 +1,13 @@
-const mongoose = require("mongoose");
-const { MongoPath } = require("./config");
-const chalk = require('chalk');
+const mongoose = require('mongoose');
+const { MongoPath } = require('./config');
+const OwnedChannel = require('./models/OwnedChannel');
 
 module.exports = async () => {
-    await mongoose.connect(MongoPath, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-
-    })
-    return mongoose
-}
-mongoose.connection.on('connected', () => {
-    console.log(chalk.bgBlueBright.black(` Successfully connected to MongoDB!`));
-});
+    if (!MongoPath) throw new Error('Set MONGODB to enable Channel Manager.');
+    mongoose.set('strictQuery', true);
+    await mongoose.connect(MongoPath, { serverSelectionTimeoutMS: 10000 });
+    // Claims rely on unique indexes, so build them before accepting commands.
+    await OwnedChannel.init();
+    console.log('[MongoDB] Channel registry connected.');
+    return mongoose;
+};
