@@ -7,7 +7,12 @@
   "scripts": {
     "start": "node index.js",
     "test": "node --test test/*.test.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src test",
+    "dev:ts": "tsx watch src/index.ts",
+    "test:ts": "tsc -p tsconfig.test.json && node --test .test-dist/test/*.test.js"
   },
   "keywords": [],
   "license": "ISC",
@@ -25,6 +30,16 @@
     "quickmongo": "^5.1.2",
     "simply-djs": "^4.1.1",
     "wait": "^0.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "eslint": "9.39.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.48.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   },
   "type": "commonjs",
   "repository": {
