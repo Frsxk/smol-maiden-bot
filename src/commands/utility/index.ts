@@ -105,26 +105,32 @@ const avatar: PrefixCommand = {
             componentType: ComponentType.Button, time: 120_000,
             filter: interaction => interaction.user.id === message.author.id && (interaction.customId === 'user' || interaction.customId === 'server'),
         });
-        const unregister = context.lifecycle.registerCleanup(() => { collector.stop('shutdown'); });
-        try {
-            while (!collector.ended) {
-                let interaction: ButtonInteraction;
-                try {
-                    interaction = await collector.next;
-                } catch (error) {
-                    if (collector.ended) break;
-                    throw error;
-                }
+        const ended = Promise.withResolvers<void>();
+        let updates = Promise.resolve();
+        const onCollect = (interaction: ButtonInteraction): void => {
+            const acknowledged = interaction.deferUpdate();
+            void acknowledged.catch(() => { collector.stop('error'); });
+            updates = updates.then(async () => {
+                await acknowledged;
                 const server = interaction.customId === 'server';
                 embed.setImage(server ? serverAvatar : userAvatar);
                 userButton.setDisabled(!server).setStyle(server ? ButtonStyle.Secondary : ButtonStyle.Success);
                 serverButton.setDisabled(server).setStyle(server ? ButtonStyle.Success : ButtonStyle.Secondary);
-                await interaction.update({ embeds: [embed], components: [row] });
-            }
+                await interaction.editReply({ embeds: [embed], components: [row] });
+            });
+            void updates.catch(() => { collector.stop('error'); });
+        };
+        collector.on('collect', onCollect);
+        collector.once('end', () => { ended.resolve(); });
+        const unregister = context.lifecycle.registerCleanup(() => { collector.stop('shutdown'); });
+        try {
+            await ended.promise;
+            await updates;
             userButton.setDisabled(true);
             serverButton.setDisabled(true);
             await response.edit({ content: '_This message is now inactive_', embeds: [embed], components: [row] });
         } finally {
+            collector.off('collect', onCollect);
             collector.stop();
             unregister();
         }
