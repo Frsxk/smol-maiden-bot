@@ -16,7 +16,7 @@ export const ownedChannelSchema = new Schema<OwnershipRecord>({
     whitelist: { type: [String], default: [] },
     blacklist: { type: [String], default: [] },
     viewSnapshots: { type: [viewSnapshotSchema], default: [] },
-}, { versionKey: false });
+}, { versionKey: false, bufferCommands: false });
 
 // Mongoose derives the existing ownedchannels collection from this model name.
 export const OwnedChannel = model<OwnershipRecord>('OwnedChannel', ownedChannelSchema);

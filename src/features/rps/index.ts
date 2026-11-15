@@ -10,7 +10,7 @@ export type { RpsChoice, RpsClock, RpsState, RpsTerminal, RpsSessionOptions } fr
 export interface RpsOptions {
     readonly color?: ColorResolvable;
     readonly footer?: EmbedFooterOptions;
-    readonly registerCleanup?: (cleanup: () => void | Promise<void>) => void;
+    readonly registerCleanup?: (cleanup: () => void | Promise<void>) => (() => void) | void;
 }
 
 const responses: Record<RpsInputResult, string> = {
@@ -82,6 +82,7 @@ export async function playRps(message: Message<true>, options: RpsOptions = {}):
     let gameMessage: Message<true> | undefined;
     let stopCollector: (() => void) | undefined;
     let edits: Promise<void> = Promise.resolve();
+    let unregisterCleanup: (() => void) | void = undefined;
     const session = new RpsSession(message.id, { challenger: message.author.id, opponent: opponent.id }, {
         onChange(state) {
             if (isRpsTerminal(state)) stopCollector?.();
@@ -96,7 +97,7 @@ export async function playRps(message: Message<true>, options: RpsOptions = {}):
         await edits;
     };
     try {
-        options.registerCleanup?.(cleanup);
+        unregisterCleanup = options.registerCleanup?.(cleanup);
         gameMessage = await message.reply(view(session, options));
         if (isRpsTerminal(session.state)) {
             await gameMessage.edit(view(session, options));
@@ -120,6 +121,7 @@ export async function playRps(message: Message<true>, options: RpsOptions = {}):
         await session.done;
         await edits;
     } finally {
+        unregisterCleanup?.();
         await cleanup();
     }
 }

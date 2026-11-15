@@ -36,7 +36,7 @@ export interface CommandRegistry {
 
 export interface AppLifecycle {
     track<T>(promise: Promise<T>): Promise<T>;
-    registerCleanup(cleanup: () => void | Promise<void>): void;
+    registerCleanup(cleanup: () => void | Promise<void>): () => void;
 }
 
 export interface AppContext {
