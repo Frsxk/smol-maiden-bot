@@ -1,6 +1,6 @@
 # TypeScript and Discord.js refactoring plan
 
-Status: proposed implementation plan. No runtime changes have been made.
+Status: implemented and verified under the approved offline acceptance scope on 2026-11-15. Live Discord acceptance and production rollout remain operator-controlled.
 
 ## Goal and scope
 
@@ -17,32 +17,53 @@ Defaults for implementation:
 - Preserve the bot's wording and visual identity except where a response is incorrect, unsafe, or describes obsolete behavior.
 - Finish with one TypeScript implementation, not parallel JavaScript/TypeScript trees or compatibility exports.
 
-## Repository findings
+### Approved implementation decisions
 
-| Area | Evidence | Migration consequence |
+- The user approved independent original TypeScript replacements for RPS and, after evidence of broken legacy promises/role changes/giveaway recovery, the role and giveaway helpers. Do not copy or translate the licensed vendored helper. Remove simply-djs after all callers migrate.
+- Acceptance is offline-only. No production token, gateway login, command registration, live database mutation, or live Discord acceptance is authorized by the migration approval.
+- Guild capabilities default empty and are operator-owned. The complete original-guild mapping is in [README](README.md#guild-configuration-and-old-component-messages); populate it before existing-guild cutover. Empty defaults do not authorize silently losing current functionality.
+- Giveaway model `Giveaway-System`, collection `giveaway-systems`, original fields and component IDs remain stable. Additive recovery fields preserve existing records. Old rows require an explicit `GIVEAWAY_LOCATIONS_JSON` message-to-guild/channel mapping; never scan all channels or guess locations.
+- Node 22.12.0+ is the supported baseline; CI and Docker use Node 22. Production starts `dist/index.js`, including emitted calculator worker artifacts.
+- The current files, not proposed paths below, are authoritative. Gates listed here must be recorded by the parent verifier before release; no agent's implementation claim substitutes for check output.
+
+### Verification record
+
+- Clean installation succeeded on Windows with Node 24.14.0 and `npx --yes npm@11.6.2 ci`. The workstation's npm 9.3.0 failed dependency cleanup with `ERR_FS_EISDIR`; using npm 11 resolved it without changing the locked dependency versions.
+- TypeScript diagnostics, type-aware ESLint, all 141 compiled tests, and the production build passed. No language server was configured; compiler diagnostics were used.
+- Disposable MongoDB 7 checks verified global ownership uniqueness, defaults, old ownership documents, the existing giveaway collection, retained custom fields, and location backfill. The disposable container was stopped afterward.
+- The production image built on Node 22.23.5. Non-root, read-only, network-disabled checks generated a GIF, evaluated a compiled calculator worker, previewed commands outside `/app`, and rejected missing credentials and an unavailable database.
+- A real SIGTERM in that restricted container completed collector cleanup and destroyed the client before exiting. Gateway login was replaced with an offline client seam; this does not prove live Discord authentication.
+- Built module imports and deployment previews worked outside the repository working directory. README guild configuration and `.env.example` passed the production configuration decoder.
+- CI is configured, not yet observed on GitHub. Live guild permissions, non-admin visibility, production credentials/data, and actual PM2 restart/stop operations were not exercised. No application commands were deployed.
+
+
+## Repository findings and implemented destinations
+
+The findings below describe the pre-migration baseline; links now point to current equivalents rather than removed JavaScript paths.
+
+| Area | Current evidence | Migration contract |
 | --- | --- | --- |
-| Runtime | [package.json](package.json), [index.js](index.js) | CommonJS, no TypeScript toolchain; the client receives untyped `discord`, `config`, `cwd`, `commands`, and `slash` properties. |
-| Registration | [handler/index.js](handler/index.js) | Filesystem discovery depends on the working directory. Global slash commands are overwritten on `clientReady`. |
-| Dispatch | [events/client/interactionCreate.js](events/client/interactionCreate.js), [events/client/messageCreate.js](events/client/messageCreate.js) | Slash execution is not awaited inside `try/catch`; prefix execution has no dispatch-level error boundary. Option flattening drops falsy values. |
-| Help | [slashCmds/Bot/help.js](slashCmds/Bot/help.js), [commands/Bot/help.js](commands/Bot/help.js), [commands/Bot/list.js](commands/Bot/list.js) | Help scans source directories at request time. Alias entries affect counts, and slash usage contains deployment-specific command IDs. |
-| Ownership | [models/OwnedChannel.js](models/OwnedChannel.js), [utils/channelPermissions.js](utils/channelPermissions.js) | Unique user/channel indexes, stored permission baselines, a re-entrant per-channel queue, and compensating rollback are established contracts. |
-| Database startup | [mongo.js](mongo.js), [index.js](index.js) | Missing `MONGODB` disables Channel Manager; configured MongoDB must connect and build indexes before login. |
-| Tests | [test/channel-manager.test.js](test/channel-manager.test.js) | Substantial Channel Manager regression coverage uses real Discord.js permission flags and a model double installed through `require.cache`. |
-| Games and roles | [src/rps.js](src/rps.js), [commands/lmao/gstart.js](commands/lmao/gstart.js), [commands/lmao/2iFTIvcy6.js](commands/lmao/2iFTIvcy6.js) | RPS is vendored generated JavaScript; role/giveaway flows use unsupported `simply-djs`. Existing component messages need a cutover strategy. |
-| Operations | [commands/lmao/run.js](commands/lmao/run.js), [commands/lmao/restart.js](commands/lmao/restart.js), [commands/lmao/shutdown.js](commands/lmao/shutdown.js) | Owner-only process execution is intentionally available. Restart/shutdown call PM2, which the supplied container does not include. |
-| Deployment | [Dockerfile](Dockerfile), [docker-compose.yml](docker-compose.yml) | Node 22, production dependency install, raw-source copies, non-root/read-only runtime. The healthcheck only imports Discord.js. |
+| Runtime | [package.json](package.json), [src/index.ts](src/index.ts), [src/app.ts](src/app.ts) | Strict TypeScript, explicit lifecycle/context, compiled CommonJS output. |
+| Registration | [deploy-commands.ts](src/scripts/deploy-commands.ts) | REST-only CLI; preview default, explicit guild/global scope and apply, token/application identity check; no startup registration. |
+| Dispatch | [events](src/events), [registry](src/commands/registry.ts) | Awaited handlers, contained rejections, canonical command metadata and alias lookup. |
+| Help | [bot commands](src/commands/bot) | Registry-backed help, no cwd-dependent discovery or deployment-specific command IDs. |
+| Ownership | [database](src/database), [channel manager](src/features/channel-manager) | Existing collection/index identity, permission baselines, per-channel queue and compensating rollback. |
+| Tests | [test](test) | TypeScript Node test-runner fixtures with narrow Discord/database boundaries. Offline checks do not prove live permissions or real MongoDB indexes. |
+| Games and roles | [RPS](src/features/rps), [giveaways](src/features/giveaways), [components](src/components) | Independent replacements, persistent role/giveaway IDs and additive giveaway recovery. |
+| Operations | [legacy commands](src/commands/legacy), [process integration](src/integrations/processes.ts) | Owner-only process execution; PM2 opt-in by process name, unavailable in the supplied container. |
+| Deployment | [Dockerfile](Dockerfile), [docker-compose.yml](docker-compose.yml), [CI](.github/workflows/ci.yml) | Compiled production image, native Canvas/GIF smoke, non-root/read-only runtime; misleading healthcheck removed. |
 
 ### Version policy
 
 Use the existing locked dependency graph for the first conversion and pin the compiler/tooling versions selected during implementation. Match `@types/node`, local development, CI, and Docker to the same tested Node major.
 
-Keep the current Node 22 deployment baseline unless a verified dependency/toolchain requirement forces a coordinated upgrade. Check the entire dependency graph, not just Discord.js.
+The selected baseline is Node 22.12.0+, matching package engines, Node 22 types, CI, and the `node:22-slim` build/runtime image. Parent verification must establish install/build/native compatibility on the actual deployment architecture.
 
-There is a documentation discrepancy worth recording: the Discord.js 14.27.0 web landing page currently advertises Node 24.17+, while its published npm manifest and this repository's lockfile declare `node >=18`. Use the exact package metadata and a clean install/build/runtime check to settle compatibility; do not silently upgrade production based on the landing page alone. The manifest's minimum is not a recommendation to deploy an obsolete Node release.
+Earlier planning found conflicting Discord.js website/npm minimums. The package manifest and complete locked graph govern compatibility, not a marketing landing page alone. The selected supported baseline does not imply every newer Node major has been verified.
 
 ## Target architecture
 
-Use ordinary modules and explicit dependencies. The following paths are proposed, not existing files:
+The implemented layout follows these module boundaries; consult current files for exact filenames:
 
 ```text
 src/
@@ -93,7 +114,7 @@ Each phase should be a reviewable change. Internal migration commits may be non-
 
 - Inventory all commands listed below, including aliases, argument formats, owner-only rules, guild restrictions, persistent component IDs, and external dependencies.
 - Record the existing command payloads and database schema/index definitions before changing them. Use sanitized fixtures, not production tokens or database dumps in Git.
-- Run the current Channel Manager suite once before implementation and record its result. Existing failures must be distinguished from migration regressions, not assumed absent.
+- Preserve the recorded baseline evidence separately from the final migration checks; do not rerun reported failures merely to confirm them or invent a baseline pass.
 - Confirm a supported Node patch, installed dependency compatibility, and Canvas availability on the development platform and Linux image.
 - Record the expected behavior of currently broken legacy paths rather than preserving bugs as requirements. Prioritize rejected promises, double responses, wrong authorization, and unresolved game completion.
 
@@ -170,9 +191,9 @@ Exit: the existing regression behaviors pass unchanged, real database compatibil
 Additional requirements:
 
 - RPS must settle its result on decline, timeout, completion, and failure. Validate participants and choices, prevent repeated moves, disable/remove controls when finished, and release collectors/timers.
-- Audit vendored RPS provenance before editing or redistributing it. The lockfile labels `simply-djs` CC-BY-NC-ND-4.0; preserve applicable attribution and establish rights rather than assuming the repository's ISC license covers third-party code.
-- Keep `simply-djs` isolated behind precise typed integration functions for the initial migration. Its unsupported status remains an explicit risk, not something TypeScript fixes. Verify all retained giveaway and role operations against the selected Discord.js version; do not stub a failing flow. If incompatible, replacement with feature/data parity becomes required work before cutover.
-- Check the helper's actual giveaway persistence and startup requirements before claiming MongoDB-optional behavior covers giveaways. Preserve active giveaway data and existing role/giveaway message IDs, or perform an explicit migration/republication before removing their old routes.
+- The approved independent RPS replacement removes the licensed vendored helper, rather than editing/translating its generated code. Preserve historical credit without claiming the ISC license grants rights to that former helper.
+- The user also approved original role/giveaway replacements after source evidence of broken legacy behavior. Retain existing role IDs and `role-<roleId>`, `enter_giveaway`, `end_giveaway`, and `reroll_giveaway` routes. Role configuration remains an authorization allowlist.
+- Giveaways use the same collection and original fields with additive `guildId`, `channelId`, `completed`, `winners`, and `pendingPublish`. Map all active legacy message locations explicitly, verify the original bot messages, resume timers, and replay pending publications without redrawing winners. Retain/report unrecoverable rows for operator reconciliation.
 - Do not mutate `message.content` to adapt giveaway parsing. Pass explicit values or use a narrow typed input boundary supported by the dependency.
 - Remove direct `mongodb` and `quickmongo` dependencies only after confirming they remain unused. Replace `wait` with Node's promise-based timers; remove `node-cron` after moving its sole activity task. Update the lockfile deliberately rather than applying broad forced audit fixes.
 - `run` is arbitrary program execution available to the configured owner. TypeScript and containers do not make it a sandbox. Do not broaden access, log secrets through user-facing errors, or remove the capability without an explicit decision.
@@ -194,7 +215,7 @@ Exit: the acceptance checklist below is complete and an operator can deploy or r
 
 ## Acceptance checklist
 
-These are future implementation checks, not results of this planning pass.
+These are acceptance gates, not reported successes. Implementation is present; the parent verifier must record offline results. Real MongoDB and live development-guild checks remain explicitly unverified and need separate operator approval under the offline-only decision.
 
 - [ ] Clean `npm ci`, typecheck, lint, tests, and production build succeed on the selected runtime.
 - [ ] All first-party runtime modules and tests are TypeScript; production runs compiled JavaScript without a development transpiler.
@@ -205,23 +226,27 @@ These are future implementation checks, not results of this planning pass.
 - [ ] RPS checks cover all outcomes, outsider clicks, duplicate moves, expired controls, and cleanup. Giveaway and role flows work with their actual persistence/configuration requirements.
 - [ ] A development guild confirms prefix commands and all three existing slash commands. Use a non-admin account for access-control checks.
 - [ ] Registration preview targets the intended application/guild, and restarting the bot does not register commands.
-- [ ] The built container starts without MongoDB, starts with MongoDB, rejects invalid required configuration, generates a GIF, and handles termination under read-only/non-root constraints.
+- [ ] The built container's offline native Canvas/GIF smoke succeeds under non-root/read-only/tmpfs constraints. Live startup with/without MongoDB, invalid startup configuration, gateway readiness, and termination are recorded separately only if authorized and actually exercised.
 - [ ] Owner-only subprocess commands remain inaccessible to ordinary users, and restart/shutdown accurately describe the selected supervisor's behavior.
 - [ ] No command, alias, active persistent component, or ownership record disappears without an explicit migration decision.
 
 ## Rollout and rollback
 
-1. Save the previous deployable image/artifact, configuration, registration payload, and a protected database backup. Validate restore access before cutover.
-2. Complete development-guild checks, including old ownership documents and persistent role/giveaway messages.
-3. Stop the old instance and drain permission operations before starting the new one. Do not run old and new instances concurrently against the same ownership registry.
-4. Deploy slash definitions only if they changed, with explicit scope and the complete intended payload. Keep the previous payload available for restoration.
-5. Start the new image and inspect login, database readiness, command errors, and representative command behavior.
-6. If rollback is needed, stop the new instance first, restore the previous artifact/configuration, and restore changed command definitions explicitly. Preserve legitimate database writes; do not blindly restore an old dump over newer ownership state.
-7. Reconcile Discord overwrites manually if an operation reported rollback failure. Reverting code or MongoDB alone cannot undo Discord-side changes.
+1. Save the previous deployable image/artifact, configuration, full slash payload, Discord permission-overwrite snapshots, and a protected database backup. Validate restore access before cutover.
+2. After explicit live-testing approval, complete development-guild checks using a separate application/database, old ownership documents, non-admin accounts, and persistent role/giveaway messages. Populate the complete guild mapping and every active legacy giveaway location first.
+3. Stop the old instance and drain permission operations before starting the new one. Locks/queues are in-process; never overlap instances against the same token/registry.
+4. Back up the current application/scope payload before `--apply`; the CLI does not back it up. Preview, stage guild-first, and deploy with explicit scope and verified token/application identity. Bulk overwrite removes commands absent from the payload.
+5. Start the new image only after offline gates and operator approval. Inspect login, database/recovery diagnostics, command errors, and representative command behavior.
+6. To roll back, stop the new instance first and restore the previous artifact/configuration and changed slash payload explicitly. Additive fields permit retaining records, but do not blindly restore an old database dump over legitimate newer writes.
+7. Reconcile Discord overwrites from snapshots after a failed permission rollback; reverting code/database cannot undo Discord-side changes automatically. The former giveaway helper had flawed recovery and timers: explicitly reconcile completed/active/pending-publication records before returning to it.
 
-## Evidence and limits of this plan
+## Evidence and remaining verification
 
-This plan is based on repository source inspection and official documentation. No dependency installation, tests, bot login, database connection, command deployment, or container execution was performed during planning. Existing test names and implementation paths provide migration requirements, not proof that the current suite passes.
+The original planning pass used source inspection and official documentation, without installs/tests/login/database/deployment/container execution. Implementation now adds the TypeScript source, toolchain, offline acceptance tests, multi-stage packaging, CI, and operator instructions. This document does not claim those gates have passed: parent verification is pending. No production token/deployment or live Discord acceptance has been performed as part of this offline-only cutover.
+
+The calculator runs bounded expressions/output in per-request workers with a five-second timeout and 64 MB old-generation heap limit. Development uses `tsx/cjs`; production must ship the sibling emitted `calculator-worker.js` and resolve it relative to its module, independent of cwd.
+
+Packaging installs dev dependencies only in build stages and production dependencies with `npm ci --omit=dev`. The final `node:22-slim` stage includes native Canvas runtime libraries and a generated-input GIF smoke; CI adds a network-disabled, read-only/non-root execution. Build inputs include TypeScript configuration; local `dist`, `.test-dist`, caches, credentials, tests, and documentation assets are excluded. No import-only healthcheck remains.
 
 References:
 

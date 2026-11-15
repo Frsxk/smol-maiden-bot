@@ -13,6 +13,9 @@ services:
       target: production
     container_name: smol-maiden
 
+    # Production starts the compiled entry point as the image's non-root user.
+    command: ["node", "dist/index.js"]
+
     env_file:
       - .env
 
