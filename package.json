@@ -2,34 +2,26 @@
   "name": "smol-maiden",
   "version": "1.0.0",
   "description": "A Discord.js bot with personal channel controls, utilities, and games.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "author": "frxskie#1009",
   "scripts": {
-    "start": "node index.js",
-    "test": "node --test test/*.test.js",
-    "dev": "nodemon index.js",
+    "start": "node dist/index.js",
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/test/*.test.js",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test",
-    "dev:ts": "tsx watch src/index.ts",
-    "test:ts": "tsc -p tsconfig.test.json && node --test .test-dist/test/*.test.js"
+    "deploy:commands": "node dist/scripts/deploy-commands.js"
   },
   "keywords": [],
   "license": "ISC",
   "dependencies": {
     "canvas": "^3.2.3",
-    "chalk": "^4.1.0",
     "discord.js": "^14.27.0",
     "dotenv": "^10.0.0",
     "mathjs": "^10.6.4",
-    "mongodb": "^4.5.0",
     "mongoose": "^6.4.2",
-    "node-cron": "^3.0.2",
-    "nodemon": "^3.0.1",
-    "pet-pet-gif": "^1.0.9",
-    "quickmongo": "^5.1.2",
-    "simply-djs": "^4.1.1",
-    "wait": "^0.4.2"
+    "pet-pet-gif": "^1.0.9"
   },
   "devDependencies": {
     "@types/node": "22.19.1",
