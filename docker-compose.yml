@@ -21,6 +21,7 @@ services:
 
     # Docker injects tini as PID 1 for proper signal handling
     init: true
+    stop_grace_period: 25s
 
     # Auto-restart on crash or EC2 reboot
     restart: unless-stopped

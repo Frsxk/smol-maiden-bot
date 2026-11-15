@@ -78,6 +78,8 @@ The multi-stage `node:22-slim` image installs dev dependencies to compile, insta
 
 There is no healthcheck: importing Discord.js cannot establish login or database readiness. Inspect startup logs and operator checks instead. PM2 is not installed in this image. Use `docker compose restart bot` or `docker compose stop bot`; an in-process clean exit under `unless-stopped` is not persistent shutdown.
 
+Shutdown drains bot operations for up to 15 seconds, then exits after successful cleanup; a 20-second deadline forces exit if cleanup fails or hangs. Compose allows 25 seconds before SIGKILL so it does not interrupt that shutdown window. Keep any external supervisor's stop timeout above 20 seconds.
+
 ## Personal channels
 
 Run these commands inside the channel you want to manage. Ownership is stored by user and channel ID, so renaming a channel does not change its owner.
@@ -91,6 +93,8 @@ Run these commands inside the channel you want to manage. Ownership is stored by
 - `sm blacklist remove <user>` removes the blacklist restriction. It does not whitelist the member or override the channel's other access rules.
 
 The channel owner, server administrators, and configured bot owner can run the four management commands. Claiming still requires the caller's **Manage Channels** permission. `create-channel` remains bot-owner-only; it does not assign ownership automatically.
+
+Queued ownership commands refresh the caller's membership and channel permissions after acquiring the channel lock. A revoked permission or failed lookup prevents the operation; permissions from the original message are not reused.
 
 For `<user>`, use a mention, user ID, or exact Discord username. Matching ignores case and does not use display names or server nicknames. Adding someone requires current server membership. After they leave, you can still remove them by ID or mention.
 
@@ -120,8 +124,8 @@ Slash commands: `/help`, `/ping`, `/calc`.
 - `sm lock` (`l`) / `sm unlock` (`ul`): change channel visibility.
 - `sm whitelist add/remove <user>` (`wl`, `invite`): manage locked-channel exceptions.
 - `sm blacklist add/remove <user>` (`bl`, `uninvite`): manage access restrictions.
-- `sm pin <message>` (`p`) / `sm unpin <message>` (`unp`): use an ID, same-channel message link, or reply. The actor needs channel **Manage Messages**, **Administrator**, or bot-owner authorization. The bot needs **Pin Messages**.
-- `sm pinscount` (`pc`): counts the first page only (at most 50 pins), not the complete history. Only the bot owner can supply another channel.
+- `sm pin <message>` (`p`) / `sm unpin <message>` (`unp`): use an ID, same-channel message link, or reply in a regular text channel, announcement channel, or thread. The actor needs channel **Manage Messages**, **Administrator**, or bot-owner authorization. The bot needs **Pin Messages**.
+- `sm pinscount` (`pc`): works in those message channels and counts the first page only (at most 50 pins), not the complete history. Only the bot owner can supply another channel.
 - `sm create-channel <name>` (`createch`, `newch`): bot-owner-only; uses the configured category and does not claim ownership.
 - `sm upgrade <#channel>` (`up`, `upg`): uses the configured category progression and required role. Channel access and permission checks still apply.
 
@@ -135,7 +139,7 @@ Slash commands: `/help`, `/ping`, `/calc`.
 - `sm resetpos [c|b|a]` (`rp`): owner-only reset of configured channel parents and positions.
 - `sm echo` (`repeat`): owner-only plain or embed messages; see command help for destination syntax.
 - `sm run <program> [arguments]` (`exec`, `execute`): owner-only process execution.
-- `sm restart` (`rs`) / `sm shutdown` (`sd`): owner-only PM2 actions, enabled only with `PM2_PROCESS_NAME` and a working PM2 installation controlling that name.
+- `sm restart` (`rs`) / `sm shutdown` (`sd`): owner-only PM2 actions, enabled only with `PM2_PROCESS_NAME` and a working PM2 installation controlling that name. On Unix, `pm2` must be on the bot process's `PATH`; on Windows, the bot invokes the locally or globally installed PM2 JavaScript CLI through Node.
 - `sm test`: the public original test reply.
 
 ### Guild configuration and old component messages
@@ -198,6 +202,8 @@ npm run build
 ```
 
 Tests compile into `.test-dist/` and use Node's test runner with offline Discord/database boundaries. Migration verification passed strict compilation, type-aware lint, all 141 tests, and the production build. The Node 22 image passed native Canvas/GIF, calculator worker, startup-failure, preview, and signal-cleanup checks under non-root/read-only restrictions. Disposable MongoDB checks covered indexes and old-document compatibility. No production login, command deployment, or production database migration was performed; live guild acceptance still requires operator approval.
+
+Post-review checks passed for queued permission revocation, announcement/thread pin utilities, overlapping avatar clicks, and shutdown with retained handles, alongside TypeScript compilation, affected-file lint, and the production build. Unix signal and PM2 argument/error handling tests ran in an offline Node 22 container using a temporary PM2 executable, not a live PM2 daemon.
 
 The calculator shares mathjs evaluation behind bounded expressions/output and a per-request worker with a five-second deadline and 64 MB old-generation heap limit. Development preloads `tsx/cjs`; production resolves the emitted sibling `calculator-worker.js` relative to the module, not the working directory. Ship all of `dist/`, including worker artifacts.
 
