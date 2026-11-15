@@ -13,13 +13,18 @@ export async function startProcess(executable: string, args: readonly string[]):
 }
 
 export async function controlPm2(action: 'restart' | 'stop', processName: string): Promise<void> {
-    const paths = [process.cwd(), dirname(process.execPath)];
-    if (process.env['APPDATA']) paths.push(join(process.env['APPDATA'], 'npm'));
-    if (process.env['npm_config_prefix']) paths.push(process.env['npm_config_prefix']);
-    // Invoke the JavaScript CLI through Node, not the Windows pm2.cmd shell wrapper.
-    const cli = resolveModule('pm2/bin/pm2', { paths });
+    let executable = 'pm2';
+    let args = [action, processName];
+    if (process.platform === 'win32') {
+        const paths = [process.cwd(), dirname(process.execPath)];
+        if (process.env['APPDATA']) paths.push(join(process.env['APPDATA'], 'npm'));
+        if (process.env['npm_config_prefix']) paths.push(process.env['npm_config_prefix']);
+        // Invoke the JavaScript CLI through Node, not the Windows pm2.cmd shell wrapper.
+        executable = process.execPath;
+        args = [resolveModule('pm2/bin/pm2', { paths }), ...args];
+    }
     const { promise, resolve, reject } = Promise.withResolvers<void>();
-    execFile(process.execPath, [cli, action, processName], { timeout: 30_000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+    execFile(executable, args, { shell: false, timeout: 30_000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
         if (stdout) console.log(stdout);
         if (stderr) console.error(stderr);
         if (error) reject(error);
