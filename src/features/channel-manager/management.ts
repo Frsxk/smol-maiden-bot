@@ -17,8 +17,7 @@ export interface ManagementInput {
     guildId: string;
     guildOwnerId: string;
     botId: string;
-    administrator: boolean;
-    manageChannels: boolean;
+    authorization(): Promise<{ administrator: boolean; manageChannels: boolean } | null>;
     config: Pick<BotConfig, 'ownerID' | 'embedColor' | 'embedFooterText1'>;
     botPermissions(): Promise<{ has(permission: bigint): boolean } | null>;
     fetchChannel(id: string): Promise<PermissionChannel | null>;
@@ -89,10 +88,13 @@ export function createManagement(dependencies: ManagementDependencies) {
         await lock(input.channel.id, async () => {
             try {
                 if (!store.isReady()) { await reply(unavailable); return; }
+                if (input.channel.isThread() && command === 'claim') { await reply('Threads cannot be claimed. Use `sm claim` in a regular text channel.'); return; }
+                if (input.channel.type !== ChannelType.GuildText || input.channel.isThread()) { await reply('Only regular text channels can be managed.'); return; }
+                let authorization;
+                try { authorization = await input.authorization(); } catch { authorization = null; }
+                if (!authorization) { await reply("I couldn't verify your current membership and channel permissions. Nothing was changed; try again."); return; }
                 if (command === 'claim') {
-                    if (input.channel.isThread()) { await reply('Threads cannot be claimed. Use `sm claim` in a regular text channel.'); return; }
-                    if (input.channel.type !== ChannelType.GuildText) { await reply('Only regular text channels can be claimed.'); return; }
-                    if (!input.manageChannels) { await reply('You need **Manage Channels** on this channel to claim it.'); return; }
+                    if (!authorization.manageChannels) { await reply('You need **Manage Channels** on this channel to claim it.'); return; }
                     let permissions;
                     try { permissions = await input.botPermissions(); } catch { permissions = null; }
                     if (!permissions) { await reply("I couldn't check my permissions in this channel. Try again in a moment."); return; }
@@ -135,7 +137,7 @@ export function createManagement(dependencies: ManagementDependencies) {
                 }
                 const doc = await store.findByChannel(input.channel.id);
                 if (!doc) { await reply('This channel has no owner. Use `sm claim` in your personal channel first!'); return; }
-                if (doc.userId !== input.author.id && !input.administrator && input.author.id !== input.config.ownerID) {
+                if (doc.userId !== input.author.id && !authorization.administrator && input.author.id !== input.config.ownerID) {
                     await reply(`Only the channel owner, a server admin, or the bot owner can ${command === 'lock' || command === 'unlock' ? `${command} this channel.` : `manage this channel's ${command}.`}`); return;
                 }
                 if (command === 'lock' || command === 'unlock') {

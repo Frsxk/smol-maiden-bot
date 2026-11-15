@@ -23,8 +23,15 @@ export function managementInput(context: AppContext, message: Message<true>, cha
     return {
         author: message.author, channel, guildId: message.guild.id, guildOwnerId: message.guild.ownerId,
         botId: context.client.user?.id ?? context.config.botClientID, config: context.config,
-        administrator: message.member?.permissions.has(PermissionFlagsBits.Administrator) ?? false,
-        manageChannels: message.member?.permissionsIn(channel).has(PermissionFlagsBits.ManageChannels) ?? false,
+        authorization: async () => {
+            const member = await message.guild.members.fetch({ user: message.author.id, force: true });
+            const fresh = await message.guild.channels.fetch(channel.id, { force: true });
+            if (fresh?.type !== ChannelType.GuildText) return null;
+            return {
+                administrator: member.permissions.has(PermissionFlagsBits.Administrator),
+                manageChannels: member.permissionsIn(fresh).has(PermissionFlagsBits.ManageChannels),
+            };
+        },
         botPermissions: async () => (await message.guild.members.fetchMe()).permissionsIn(channel),
         fetchChannel: async id => {
             const fresh = await message.guild.channels.fetch(id, { force: true });
@@ -84,11 +91,15 @@ export function createChannelManagerCommands(dependencies: ManagementDependencie
                     .setFooter({ text: context.config.embedFooterText1 }).setTimestamp()], allowedMentions: { parse: [], repliedUser: false } });
             };
             const name = definition.name;
-            if (name === 'claim' && message.channel.isThread()) { await reply('Threads cannot be claimed. Use `sm claim` in a regular text channel.'); return; }
-            if (message.channel.type !== ChannelType.GuildText || !message.member) { await reply('Only regular text channels can be managed.'); return; }
+            if (!message.member) { await reply("I couldn't verify your server membership."); return; }
             const channel = message.channel;
             if (name === 'claim' || name === 'lock' || name === 'unlock' || name === 'whitelist' || name === 'blacklist') {
+                if (name === 'claim' && channel.isThread()) { await reply('Threads cannot be claimed. Use `sm claim` in a regular text channel.'); return; }
+                if (channel.type !== ChannelType.GuildText) { await reply('Only regular text channels can be managed.'); return; }
                 await manage(name, managementInput(context, message, channel), args); return;
+            }
+            if ((name === 'create-channel' || name === 'upgrade') && channel.type !== ChannelType.GuildText) {
+                await reply('Only regular text channels can be managed.'); return;
             }
             let response: { title: string; description: string } | undefined;
             let failure: string | undefined;

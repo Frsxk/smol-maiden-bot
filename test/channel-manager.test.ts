@@ -58,9 +58,10 @@ function fixture() {
     };
     const members = new Map<string, ManagementMember>();
     const botPermissions = new Set<bigint>([VIEW, SEND, PermissionFlagsBits.ManageRoles]);
+    const authorization = { administrator: false, manageChannels: true };
     const input: ManagementInput = {
         author: { id: U1, username: 'tester' }, channel, guildId: G1, guildOwnerId: OWNER, botId: BOT,
-        administrator: false, manageChannels: true, config: { ownerID: OWNER, embedColor: '#2f3136', embedFooterText1: 'Smol Maiden' },
+        authorization: async () => authorization, config: { ownerID: OWNER, embedColor: '#2f3136', embedFooterText1: 'Smol Maiden' },
         botPermissions: async () => ({ has: bit => botPermissions.has(bit) }),
         fetchChannel: async id => id === C1 ? channel : null,
         async fetchMember(id) { const member = members.get(id); if (!member) throw Object.assign(new Error('Unknown Member'), { code: 10007 }); return member; },
@@ -71,7 +72,7 @@ function fixture() {
     const replies: MessageReplyOptions[] = [];
     const run = createManagement({ store, apply: applyChannelState, lock: withChannelLock });
     return {
-        state, cache, writes, failWrites, channel, store, members, botPermissions, input, replies,
+        state, cache, writes, failWrites, channel, store, members, botPermissions, authorization, input, replies,
         addDoc(data: Partial<CreateOwnership> = {}) { const doc = makeDoc({ userId: U1, guildId: G1, channelId: C1, ...data }); state.docs.push(doc); return doc; },
         addMember(id = U2, username = 'bestie', admin = false) {
             const member: ManagementMember = { id, user: { username }, permissions: { has: bit => admin && bit === PermissionFlagsBits.Administrator } };
@@ -171,7 +172,7 @@ test('disconnected registry fails fast before queries and writes for all ownersh
     assert.match(f.text(), /registry is unavailable/); assert.equal(f.state.queries, 0); assert.equal(f.state.creates, 0); assert.equal(f.state.saves, 0); assert.equal(f.writes.length, 0);
 });
 test('claim requires channel ManageChannels even for administrators', async () => {
-    const f = fixture(); f.input.manageChannels = false; await f.run('claim'); f.input.administrator = true; await f.run('claim');
+    const f = fixture(); f.authorization.manageChannels = false; await f.run('claim'); f.authorization.administrator = true; await f.run('claim');
     assert.match(f.text(), /Manage Channels/); assert.equal(f.state.creates, 0); assert.equal(f.state.queries, 0);
 });
 test('claim creates a default ownership record', async () => {
@@ -212,8 +213,8 @@ test('claim contains unexpected create failures', async () => {
 test('management rejects outsiders but permits owner, admin and bot-owner', async () => {
     const f = fixture(); const doc = f.addDoc(); f.addMember(); f.input.author.id = U3;
     await f.run('lock'); await f.run('whitelist', ['add', U2]); await f.run('blacklist', ['add', U2]); assert.equal(f.writes.length, 0); assert.equal(f.state.saves, 0); assert.match(f.text(), /Only the channel owner/);
-    f.input.administrator = true; await f.run('lock'); await f.run('whitelist', ['add', U2]); await f.run('blacklist', ['add', U2]); assert.deepEqual(doc.blacklist, [U2]); assert.deepEqual(doc.whitelist, []);
-    f.input.administrator = false; f.input.author.id = U1; await f.run('unlock'); assert.equal(doc.locked, false); f.input.author.id = OWNER; await f.run('lock'); assert.equal(doc.locked, true);
+    f.authorization.administrator = true; await f.run('lock'); await f.run('whitelist', ['add', U2]); await f.run('blacklist', ['add', U2]); assert.deepEqual(doc.blacklist, [U2]); assert.deepEqual(doc.whitelist, []);
+    f.authorization.administrator = false; f.input.author.id = U1; await f.run('unlock'); assert.equal(doc.locked, false); f.input.author.id = OWNER; await f.run('lock'); assert.equal(doc.locked, true);
 });
 test('whitelist mention addition and departed ID removal restores empty overlay', async () => {
     const f = fixture(); const doc = f.addDoc(); f.addMember(); await f.run('lock'); await f.run('whitelist', ['add', `<@${U2}>`]); assert.deepEqual(doc.whitelist, [U2]); assert.equal(f.view(U2, MEMBER), 1);
@@ -276,6 +277,48 @@ test('command queue spans registry read, Discord refresh, modify, apply and save
     f.input.fetchChannel = async () => { fetches++; if (fetches === 1) { started.resolve(); await gate.promise; } return f.channel; };
     const first = f.run('whitelist', ['add', U2]); await started.promise; const second = f.run('whitelist', ['add', U3]);
     assert.equal(f.state.queries, 1); gate.resolve(); await Promise.all([first, second]); assert.deepEqual(doc.whitelist, [U2, U3]); assert.equal(f.state.saves, 2);
+});
+
+test('queued administrator unlock and Manage Channels claim resolve authorization after admission', async () => {
+    for (const command of ['unlock', 'claim'] as const) {
+        const f = fixture();
+        const doc = command === 'unlock' ? f.addDoc({ userId: U3, locked: true }) : null;
+        f.authorization.administrator = command === 'unlock';
+        const entered = Promise.withResolvers<void>();
+        const release = Promise.withResolvers<void>();
+        const blocker = withChannelLock(C1, async () => { entered.resolve(); await release.promise; });
+        await entered.promise;
+        let resolutions = 0;
+        f.input.authorization = async () => { resolutions++; return f.authorization; };
+        const queued = f.run(command);
+        assert.equal(resolutions, 0);
+        f.authorization.administrator = false;
+        f.authorization.manageChannels = false;
+        release.resolve();
+        await Promise.all([blocker, queued]);
+        assert.equal(resolutions, 1);
+        assert.match(f.text(), command === 'unlock' ? /Only the channel owner/ : /Manage Channels/);
+        assert.equal(doc?.locked ?? true, true);
+        assert.equal(f.state.creates, 0);
+        assert.equal(f.state.saves, 0);
+        assert.equal(f.writes.length, 0);
+    }
+});
+
+test('management denies missing actors and authorization lookup failures including owners', async () => {
+    for (const unavailable of [async () => null, async () => { throw new Error('Lookup failed'); }]) {
+        for (const command of ['claim', 'unlock', 'whitelist', 'blacklist'] as const) {
+            const f = fixture(); const doc = f.addDoc({ locked: true });
+            f.input.authorization = unavailable;
+            await f.run(command, ['add', U2]);
+            assert.match(f.text(), /couldn't verify your current membership/);
+            assert.equal(doc.locked, true);
+            assert.equal(f.state.queries, 0);
+            assert.equal(f.state.saves, 0);
+            assert.equal(f.state.creates, 0);
+            assert.equal(f.writes.length, 0);
+        }
+    }
 });
 test('message IDs and Discord URLs are exact and same-channel', () => {
     assert.equal(parseMessageId(U2, G1, C1), U2); assert.equal(parseMessageId(`https://discord.com/channels/${G1}/${C1}/${U2}`, G1, C1), U2);
