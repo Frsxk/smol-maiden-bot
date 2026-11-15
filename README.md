@@ -212,7 +212,7 @@ The calculator shares mathjs evaluation behind bounded expressions/output and a 
 
 ## Dependencies and known limits
 
-- Discord.js supplies the client/builders; Mongoose stores ownership and giveaways.
+- Discord.js [14.28.1](https://github.com/discordjs/discord.js/releases/tag/14.28.1) supplies the client/builders; Mongoose stores ownership and giveaways.
 - mathjs handles expressions. Its runtime result is validated at the integration boundary.
 - pet-pet-gif uses Canvas; keep the direct `canvas` dependency and override because the package imports Canvas through its legacy dependency graph.
 - RPS, role menus, and giveaways now use original TypeScript implementations. The licensed vendored RPS helper and unsupported simply-djs dependency are removed, not translated or copied.
