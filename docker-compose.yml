@@ -13,11 +13,15 @@ services:
       target: production
     container_name: smol-maiden
 
+    # Production starts the compiled entry point as the image's non-root user.
+    command: ["node", "dist/index.js"]
+
     env_file:
       - .env
 
     # Docker injects tini as PID 1 for proper signal handling
     init: true
+    stop_grace_period: 25s
 
     # Auto-restart on crash or EC2 reboot
     restart: unless-stopped

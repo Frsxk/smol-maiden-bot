@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install Canvas build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential python3 pkg-config libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Preview guild commands without credentials
+        run: npm run deploy:commands -- --guild 835368931300474911
+      - name: Build production image and exercise native Canvas and GIF generation
+        run: docker build --target production --tag smol-maiden:ci .
+      - name: Exercise native GIF generation under runtime filesystem restrictions
+        run: >-
+          docker run --rm --read-only --tmpfs /tmp:noexec,nosuid,size=100m
+          --network none --cap-drop ALL --security-opt no-new-privileges:true
+          smol-maiden:ci node -e
+          "const assert = require('node:assert/strict'); const canvas = require('canvas').createCanvas(32, 32); canvas.getContext('2d').fillRect(0, 0, 32, 32); require('pet-pet-gif')(canvas.toBuffer('image/png')).then(gif => { assert.equal(gif.subarray(0, 6).toString(), 'GIF89a'); assert.ok(gif.length > 6); }).catch(error => { console.error(error); process.exitCode = 1; });"
