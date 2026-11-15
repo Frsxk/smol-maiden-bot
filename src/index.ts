@@ -30,6 +30,7 @@ export function installProcessHandlers(application: Application, logger: Runtime
         void application.stop().then(() => {
             clearTimeout(deadline);
             remove();
+            process.exit(process.exitCode ?? 0);
         }, error => {
             process.exitCode = 1;
             logger.error(`[Shutdown] ${describeRuntimeError(error)}. Waiting for the forced shutdown deadline.`);
